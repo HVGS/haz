@@ -1,143 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Forum</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            background-color: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            overflow: auto;
-        }
-        .message {
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            background-color: #e0e0e0;
-        }
-        .message.user {
-            background-color: #cce5ff;
-            text-align: right;
-        }
-        .input-container {
-            display: flex;
-            padding: 10px;
-            background-color: #fff;
-            border-top: 1px solid #ddd;
-        }
-        .input-container input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-        .input-container button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .input-container button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+  <title>Chat Forum</title>
+  <!-- Import Firebase libraries from CDN -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow: auto;
+      margin: 20px;
+    }
+    .message {
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background-color: #e0e0e0;
+    }
+    .message.user {
+      background-color: #cce5ff;
+      text-align: right;
+    }
+    .input-container {
+      display: flex;
+      padding: 10px;
+      background-color: #fff;
+      border-top: 1px solid #ddd;
+    }
+    .input-container input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+    .input-container button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .input-container button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
-    <!-- Include Firebase library -->
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
-
-    <div class="chat-container" id="chatContainer"></div>
+  <div class="chat-container">
+    <div id="messages"></div>
     <div class="input-container">
-        <input type="text" id="messageInput" placeholder="Type a message...">
-        <button id="sendButton">Send</button>
+      <input type="text" id="messageInput" placeholder="Type a message" />
+      <button onclick="sendMessage()">Send</button>
     </div>
+  </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
-            authDomain: "chat-71251.firebaseapp.com",
-            databaseURL: "https://chat-71251-default-rtdb.firebaseio.com",
-            projectId: "chat-71251",
-            storageBucket: "chat-71251.appspot.com",
-            messagingSenderId: "290327153997"
-        };
+  <script>
+    // Firebase configuration
+    var firebaseConfig = {
+      apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
+      authDomain: "chat-71251.firebaseapp.com",
+      databaseURL: "https://chat-71251-default-rtdb.firebaseio.com",
+      projectId: "chat-71251",
+      storageBucket: "chat-71251.appspot.com",
+      messagingSenderId: "290327153997"
+    };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
 
-        function getUsername() {
-            let username = localStorage.getItem('username');
-            if (!username) {
-                username = prompt("Enter your username:");
-                if (username) {
-                    localStorage.setItem('username', username);
-                }
-            }
-            return username || 'Guest';
-        }
+    // Reference to messages in the database
+    var messagesRef = database.ref('messages');
 
-        function sendMessage() {
-            const message = messageInput.value.trim();
-            if (message) {
-                const username = getUsername();
-                const newMessageRef = database.ref('messages').push();
-                newMessageRef.set({ username, message });
-                messageInput.value = '';
-            } else {
-                alert("Message cannot be empty.");
-            }
-        }
-
-        function addMessage(username, message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message' + (username === getUsername() ? ' user' : '');
-            messageDiv.textContent = `${username}: ${message}`;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        const chatContainer = document.getElementById('chatContainer');
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
-
-        database.ref('messages').on('child_added', (snapshot) => {
-            const messageData = snapshot.val();
-            addMessage(messageData.username, messageData.message);
+    // Function to send a message
+    function sendMessage() {
+      var messageInput = document.getElementById('messageInput');
+      var message = messageInput.value;
+      if (message) {
+        messagesRef.push().set({
+          message: message,
+          timestamp: Date.now()
         });
+        messageInput.value = '';
+      }
+    }
 
-        database.ref('messages').once('value', (snapshot) => {
-            snapshot.forEach((childSnapshot) => {
-                const messageData = childSnapshot.val();
-                addMessage(messageData.username, messageData.message);
-            });
-        });
+    // Function to display messages
+    function displayMessages() {
+      var messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML = '';
+      messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
+        var messageData = snapshot.val();
+        var messageElement = document.createElement('div');
+        messageElement.textContent = messageData.message;
+        messageElement.className = 'message';
+        messagesDiv.appendChild(messageElement);
+      });
+    }
 
-        sendButton.addEventListener('click', sendMessage);
-
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    </script>
+    // Load messages on page load
+    displayMessages();
+  </script>
 </body>
 </html>
