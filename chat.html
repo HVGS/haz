@@ -79,6 +79,40 @@
     .input-container .secret-button:hover {
       background-color: #f5c6cb;
     }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      padding: 20px;
+      z-index: 1000;
+    }
+    .popup button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .popup button.ChickenMan {
+      background-color: #f8d7da;
+    }
+    .popup button.Idiots {
+      background-color: #e2a8e2;
+    }
+    .popup button.default {
+      background-color: #e0e0e0;
+    }
+    .popup button.clear-chat {
+      background-color: #d6a5a5; /* Dark red */
+      color: #000;
+    }
   </style>
 </head>
 <body>
@@ -91,6 +125,13 @@
     </div>
   </div>
   
+  <div id="beastmodePopup" class="popup">
+    <button class="ChickenMan" onclick="setRole('ChickenMan')">ChickenMan</button>
+    <button class="Idiots" onclick="setRole('Idiots')">Idiots</button>
+    <button class="default" onclick="setRole('default')">Default</button>
+    <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       try {
@@ -244,7 +285,7 @@
               var userRole = userData ? userData.role : 'default';
               var messageElement = document.createElement('div');
               messageElement.textContent = userName + ": " + messageData.message;
-              messageElement.className = 'message ' + (messageData.uuid === getUserUUID() ? 'self ' : '') + userRole;
+              messageElement.className = 'message ' + userRole + (userData.uuid === getUserUUID() ? ' self' : '');
               messagesDiv.appendChild(messageElement);
             });
           });
@@ -289,6 +330,11 @@
           }
         }
 
+        function showBeastmode() {
+          var popup = document.getElementById('beastmodePopup');
+          popup.style.display = 'block';
+        }
+
         // Initialize chat
         promptForLoginOrSignup();
 
@@ -303,6 +349,7 @@
         // Expose functions to global scope
         window.accessSecretChat = accessSecretChat;
         window.clearChat = clearChat;
+        window.showBeastmode = showBeastmode;
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
