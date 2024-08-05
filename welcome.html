@@ -60,25 +60,28 @@
             box-sizing: border-box;
         }
 
-        #grid-container {
+        #grid {
+            width: 33.33%;
+            height: 100vh;
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(3, 1fr);
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
             gap: 10px;
-            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        .grid-item {
+        .grid-box {
             display: flex;
             justify-content: center;
             align-items: center;
+            border-radius: 8px;
             background-color: #242424;
-            border-radius: 15px;
             font-weight: bold;
-            color: #FFF;
+            font-size: 18px;
         }
 
-        .grid-item:first-child {
+        .grid-box:first-child {
             background-color: #fa575d;
         }
     </style>
@@ -90,14 +93,15 @@
         <iframe id="embed-frame" src="https://hvgs.github.io/tt/embed.html" title="Embedded Content"></iframe>
     </div>
     <div id="content">
-        <div id="grid-container">
-            <div class="grid-item">Box 1</div>
-            <div class="grid-item">Box 2</div>
-            <div class="grid-item">Box 3</div>
-            <div class="grid-item">Box 4</div>
-            <div class="grid-item">Box 5</div>
-            <div class="grid-item">Box 6</div>
-        </div>
+        <!-- Your additional content goes here -->
+    </div>
+    <div id="grid">
+        <div class="grid-box">Box 1</div>
+        <div class="grid-box">Box 2</div>
+        <div class="grid-box">Box 3</div>
+        <div class="grid-box">Box 4</div>
+        <div class="grid-box">Box 5</div>
+        <div class="grid-box">Box 6</div>
     </div>
 
     <script>
@@ -135,4 +139,31 @@
 
         // Function to remove the "itsame" cookie
         function removeCookie() {
-            document.cookie = 'itsame=; expires=Thu, 
+            document.cookie = 'itsame=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+            window.location.href = 'index.html'; // Redirect after removing cookie
+        }
+
+        // Function to refresh the embedded iframe
+        function refreshEmbeds() {
+            const iframe = document.getElementById('embed-frame');
+            iframe.src = iframe.src; // Refresh the iframe by resetting its src
+        }
+
+        // Listen for keydown event
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'b') {
+                event.preventDefault(); // Prevent default action for Ctrl+B
+                removeCookie();
+            }
+        });
+
+        // Initialize display and check cookie
+        checkCookie();
+        displayDayWeek();
+
+        // Make refreshEmbeds() and removeCookie() available globally
+        window.refreshEmbeds = refreshEmbeds;
+        window.removeCookie = removeCookie;
+    </script>
+</body>
+</html>
