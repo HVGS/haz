@@ -26,6 +26,15 @@
             color: #FFF;
         }
 
+        #welcome-message {
+            position: absolute;
+            top: 40px; /* Adjust this value to place it below the day-week display */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px; /* Larger font size */
+            color: #FFF;
+        }
+
         #embed {
             width: 33.33%;
             height: 100vh;
@@ -54,6 +63,7 @@
 </head>
 <body>
     <div id="day-week-display"></div>
+    <div id="welcome-message">Welcome Harry,</div>
     <div id="embed">
         <iframe src="https://hvgs.github.io/tt/embed.html" title="Embedded Content"></iframe>
     </div>
