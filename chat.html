@@ -23,7 +23,7 @@
       background-color: #ffffff;
       border: 1px solid #ddd;
       border-radius: 5px;
-      overflow: auto;
+      overflow-y: auto; /* Make the chat container scrollable */
       margin: 20px;
       position: relative;
     }
@@ -117,12 +117,11 @@
   </style>
 </head>
 <body>
-  <div id="chatContainer" style="display:none;">
+  <div id="chatContainer" class="chat-container" style="display:none;">
     <div id="messages"></div>
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
-      <button class="secret-button" onclick="clearChat()">Clear Chat</button>
     </div>
   </div>
   
@@ -132,8 +131,7 @@
     <button class="default" onclick="setRole('default')">Default</button>
     <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
   </div>
-
-    <script>
+<script>
   function createFaviconWithDot() {
     var canvas = document.createElement('canvas');
     var size = 32; // Size of the favicon
@@ -175,7 +173,8 @@
   // Check for unread messages periodically (e.g., every 10 seconds)
   setInterval(checkForUnreadMessages, 10000);
 </script>
-<script>
+
+  <script>
     document.addEventListener('DOMContentLoaded', function() {
       try {
         // Firebase configuration
@@ -319,18 +318,45 @@
 
         function displayMessages() {
           var messagesDiv = document.getElementById('messages');
-          messagesDiv.innerHTML = '';
-          messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
-            var messageData = snapshot.val();
-            usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
-              var userData = userSnapshot.val();
-              var userName = userData ? userData.name : 'Unknown';
-              var userRole = userData ? userData.role : 'default';
-              var messageElement = document.createElement('div');
-              messageElement.textContent = userName + ": " + messageData.message;
-              messageElement.className = 'message ' + userRole + (userData.uuid === getUserUUID() ? ' self' : '');
-              messagesDiv.appendChild(messageElement);
+          var lastVisibleMessageKey = null;
+          var isInitialLoad = true;
+
+          function loadMessages() {
+            var query = messagesRef.orderByChild('timestamp').limitToLast(20);
+            if (lastVisibleMessageKey) {
+              query = query.endAt(lastVisibleMessageKey);
+            }
+            query.once('value', function(snapshot) {
+              if (snapshot.numChildren() === 0) return;
+              if (isInitialLoad) {
+                isInitialLoad = false;
+                messagesDiv.innerHTML = ''; // Clear initial load
+              }
+              snapshot.forEach(function(childSnapshot) {
+                var messageData = childSnapshot.val();
+                usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
+                  var userData = userSnapshot.val();
+                  var userName = userData ? userData.name : 'Unknown';
+                  var userRole = userData ? userData.role : 'default';
+                  var messageElement = document.createElement('div');
+                  messageElement.textContent = userName + ": " + messageData.message;
+                  messageElement.className = 'message ' + userRole + (messageData.uuid === getUserUUID() ? ' self' : '');
+                  messagesDiv.appendChild(messageElement);
+                  lastVisibleMessageKey = childSnapshot.key; // Track last message key
+                });
+              });
+              messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
             });
+          }
+
+          // Load initial messages
+          loadMessages();
+
+          // Load more messages when scrolling up
+          messagesDiv.addEventListener('scroll', function() {
+            if (messagesDiv.scrollTop === 0) {
+              loadMessages();
+            }
           });
         }
 
