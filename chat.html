@@ -25,6 +25,7 @@
       overflow: auto;
       margin: 20px;
       position: relative;
+      height: calc(100% - 80px); /* Adjust to fit input and button */
     }
     .message {
       padding: 10px;
@@ -98,7 +99,43 @@
     .beastmode-panel button.close-button:hover {
       background-color: #aaa;
     }
+    .beastmode-panel button.default {
+      background-color: #e0e0e0;
+    }
+    .beastmode-panel button.default:hover {
+      background-color: #c0c0c0;
+    }
+    .beastmode-panel button.idiots {
+      background-color: #e2a8e2;
+    }
+    .beastmode-panel button.idiots:hover {
+      background-color: #d18ad1;
+    }
+    .beastmode-panel button.chickenman {
+      background-color: #f8d7da;
+    }
+    .beastmode-panel button.chickenman:hover {
+      background-color: #f5c6cb;
+    }
+    .beastmode-panel button.clear-chat {
+      background-color: #f8d7da;
+    }
+    .beastmode-panel button.clear-chat:hover {
+      background-color: #f5c6cb;
+    }
+    .favicon-indicator {
+      width: 16px;
+      height: 16px;
+      background: transparent;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border-radius: 50%;
+      border: 2px solid red;
+      display: none;
+    }
   </style>
+  <link rel="icon" href="favicon.ico" id="favicon">
 </head>
 <body>
   <script>
@@ -142,7 +179,11 @@
             } else {
               var userUUID = generateUUID();
               document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, role: "default", nameLower: userName.toLowerCase() }, function(error) {
+              usersRef.child(userUUID).set({
+                name: userName,
+                role: "default",
+                nameLower: userName.toLowerCase() // Store name in lower case for comparison
+              }, function(error) {
                 if (error) {
                   alert("Error setting user name.");
                 } else {
@@ -260,53 +301,70 @@
           });
       }
 
-      function showBeastMode() {
+      function updateFavicon(hasUnreadMessages) {
+        var favicon = document.getElementById('favicon');
+        if (hasUnreadMessages) {
+          favicon.href = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="red"/></svg>';
+        } else {
+          favicon.href = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="transparent"/></svg>';
+        }
+      }
+
+      function markMessagesAsRead() {
+        updateFavicon(false);
+      }
+
+      function openBeastModePanel() {
         var panel = document.getElementById('beastmodePanel');
         panel.style.display = 'block';
       }
 
-      function closeBeastMode() {
-        var panel = document.getElementById('beastmodePanel');
-        panel.style.display = 'none';
-      }
+      document.getElementById('messageInput').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+          sendMessage();
+        }
+      });
 
-      function setUpEventListeners() {
-        document.getElementById('sendButton').addEventListener('click', sendMessage);
-        document.getElementById('secretButton').addEventListener('click', accessSecretChat);
-        document.getElementById('beastModeButton').addEventListener('click', showBeastMode);
-        document.getElementById('beastmodePanel').addEventListener('click', function(event) {
-          if (event.target.classList.contains('close-button')) {
-            closeBeastMode();
-          } else if (event.target.classList.contains('set-role')) {
-            setRole(event.target.dataset.role);
-          } else if (event.target.id === 'clearChatButton') {
-            clearChat();
-          }
-        });
-      }
+      document.getElementById('secretButton').addEventListener('click', accessSecretChat);
 
-      setUpEventListeners();
-      promptForUserName(); // Prompt for username on page load
+      document.getElementById('closeBeastMode').addEventListener('click', function() {
+        document.getElementById('beastmodePanel').style.display = 'none';
+      });
+
+      document.getElementById('defaultRoleButton').addEventListener('click', function() {
+        setRole('default');
+      });
+
+      document.getElementById('idiotsRoleButton').addEventListener('click', function() {
+        setRole('Idiots');
+      });
+
+      document.getElementById('chickenmanRoleButton').addEventListener('click', function() {
+        setRole('ChickenMan');
+      });
+
+      document.getElementById('clearChatButton').addEventListener('click', clearChat);
+
+      markMessagesAsRead(); // Mark messages as read on page load
     });
   </script>
-
-  <div id="chatContainer" style="display:none;">
-    <div id="messages" class="chat-container"></div>
+  
+  <!-- Main chat container -->
+  <div id="chatContainer" class="chat-container" style="display: none;">
+    <div id="messages"></div>
     <div class="input-container">
-      <input type="text" id="messageInput" placeholder="Type a message..." />
-      <button id="sendButton">Send</button>
-      <button id="secretButton" class="secret-button">Secret</button>
+      <input type="text" id="messageInput" placeholder="Type your message here..."/>
+      <button class="secret-button" id="secretButton">Secret</button>
     </div>
   </div>
 
+  <!-- Beast Mode panel -->
   <div id="beastmodePanel" class="beastmode-panel">
-    <button class="close-button">Close</button>
-    <button class="set-role" data-role="ChickenMan">ChickenMan</button>
-    <button class="set-role" data-role="Idiots">Idiots</button>
-    <button class="set-role" data-role="Default">Default</button>
-    <button id="clearChatButton">Clear Chat</button>
+    <button class="close-button" id="closeBeastMode">Close</button>
+    <button class="default" id="defaultRoleButton">Set Role to Default</button>
+    <button class="idiots" id="idiotsRoleButton">Set Role to Idiots</button>
+    <button class="chickenman" id="chickenmanRoleButton">Set Role to ChickenMan</button>
+    <button class="clear-chat" id="clearChatButton">Clear Chat</button>
   </div>
-
-  <link rel="icon" id="favicon" href="favicon.ico">
 </body>
 </html>
