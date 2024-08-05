@@ -122,6 +122,13 @@
     .popup .done-button:hover {
       background-color: #218838;
     }
+    .message {
+      display: block;
+      margin: 10px 0;
+    }
+    .message.admin {
+      color: darkred; /* Admin message color */
+    }
   </style>
 </head>
 <body>
@@ -134,10 +141,9 @@
   </div>
   
   <div id="beastmodePopup" class="popup">
-    <button class="ChickenMan" onclick="setRole('ChickenMan')">ChickenMan</button>
-    <button class="Idiots" onclick="setRole('Idiots')">Idiots</button>
-    <button class="default" onclick="setRole('default')">Default</button>
     <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
+    <button class="lock" onclick="lockChat()">Lock Chat</button>
+    <button class="unlock" onclick="unlockChat()">Unlock Chat</button>
     <button class="done-button" onclick="closeBeastMode()">Done</button>
   </div>
 
@@ -158,6 +164,7 @@
         var messagesRef = database.ref('messages');
         var usersRef = database.ref('users');
         var clearChatRef = database.ref('clearChatFlag');
+        var lockChatRef = database.ref('lockChatFlag');
 
         function getUserUUID() {
           var uuid = "";
@@ -270,18 +277,25 @@
           var message = messageInput.value.trim();
           var userUUID = getUserUUID();
           if (message !== '' && userUUID) {
-            messagesRef.push().set({
-              message: message,
-              uuid: userUUID,
-              timestamp: Date.now()
+            lockChatRef.once('value', function(snapshot) {
+              if (!snapshot.val()) {
+                messagesRef.push().set({
+                  message: message,
+                  uuid: userUUID,
+                  timestamp: Date.now()
+                });
+                messageInput.value = '';
+              } else {
+                alert("Chat is locked.");
+              }
             });
-            messageInput.value = '';
           }
         }
 
         function displayMessages() {
           var messagesDiv = document.getElementById('messages');
-          messagesDiv.innerHTML = ''; // Clear previous messages
+          var messageList = [];
+
           messagesRef.on('child_added', function(snapshot) {
             var messageData = snapshot.val();
             usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
@@ -291,8 +305,8 @@
               var messageElement = document.createElement('div');
               messageElement.textContent = userName + ": " + messageData.message;
               messageElement.className = 'message ' + userRole + (messageData.uuid === getUserUUID() ? ' self' : '');
-              messagesDiv.appendChild(messageElement);
-              messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
+              messageList.push(messageElement);
+              loadMessages(messagesDiv, messageList);
             });
           });
 
@@ -303,6 +317,36 @@
               location.reload(); // Refresh the page for all users
             }
           });
+
+          // Listen for lockChatFlag changes
+          lockChatRef.on('value', function(snapshot) {
+            var isLocked = snapshot.val();
+            if (isLocked) {
+              var adminMessage = {
+                message: "Chat locked",
+                uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
+                timestamp: Date.now()
+              };
+              messagesRef.push().set(adminMessage);
+              document.getElementById('messageInput').disabled = true;
+            } else {
+              var adminMessage = {
+                message: "Chat unlocked",
+                uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
+                timestamp: Date.now()
+              };
+              messagesRef.push().set(adminMessage);
+              document.getElementById('messageInput').disabled = false;
+            }
+          });
+        }
+
+        function loadMessages(container, messagesList) {
+          container.innerHTML = '';
+          messagesList.forEach(function(messageElement) {
+            container.appendChild(messageElement);
+          });
+          container.scrollTop = container.scrollHeight; // Scroll to bottom
         }
 
         function accessSecretChat() {
@@ -326,9 +370,17 @@
               uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f", // Admin UUID
               timestamp: Date.now()
             }).then(function() {
-              clearChatRef.set(true); // Set the flag to true to notify all users
+              clearChatRef.set(true); // Set the flag to notify all users
             });
           });
+        }
+
+        function lockChat() {
+          lockChatRef.set(true);
+        }
+
+        function unlockChat() {
+          lockChatRef.set(false);
         }
 
         function setRole(role) {
@@ -373,6 +425,8 @@
         window.showBeastmode = showBeastmode;
         window.closeBeastMode = closeBeastMode;
         window.setRole = setRole;
+        window.lockChat = lockChat;
+        window.unlockChat = unlockChat;
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
