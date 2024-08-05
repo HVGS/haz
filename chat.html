@@ -251,13 +251,41 @@
           }
         }
 
-        document.body.innerHTML = `
-          <div class="chat-container" id="chatContainer" style="display:none;">
-            <div id="messages"></div>
-            <div class="input-container">
-              <input type="text" id="messageInput" placeholder="Type a message" />
-              <button class="secret-button" onclick="accessSecretChat()">Secret</button>
-            </div>
+        function setRole(role) {
+          var userUUID = getUserUUID();
+          if (userUUID) {
+            usersRef.child(userUUID).update({ role: role }, function(error) {
+              if (error) {
+                alert("Error updating role.");
+              } else {
+                alert("Role updated to: " + role);
+              }
+            });
+          } else {
+            alert("User not found.");
+          }
+        }
+
+        function updateUserName(newName) {
+          var userUUID = getUserUUID();
+          if (userUUID && newName) {
+            usersRef.child(userUUID).update({ name: newName }, function(error) {
+              if (error) {
+                alert("Error updating user name.");
+              } else {
+                alert("User name updated to: " + newName);
+              }
+            });
+          } else {
+            alert("Error updating user name.");
+          }
+        }
+
+        document.getElementById('chatContainer').innerHTML = `
+          <div id="messages"></div>
+          <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Type a message" />
+            <button class="secret-button" onclick="accessSecretChat()">Secret</button>
           </div>
         `;
 
