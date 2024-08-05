@@ -60,20 +60,16 @@
     </style>
 </head>
 <body>
-    <!-- Include Firebase library -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
-    <div class="chat-container" id="chatContainer">
-        <!-- Messages will be dynamically inserted here -->
-    </div>
+    <div class="chat-container" id="chatContainer"></div>
     <div class="input-container">
         <input type="text" id="messageInput" placeholder="Type a message...">
         <button id="sendButton">Send</button>
     </div>
 
     <script>
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
             authDomain: "chat-71251.firebaseapp.com",
@@ -81,14 +77,11 @@
             projectId: "chat-71251",
             storageBucket: "chat-71251.appspot.com",
             messagingSenderId: "290327153997"
-            // appId is omitted
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // Function to get or create a unique username for the user
         function getUsername() {
             let username = localStorage.getItem('username');
             if (!username) {
@@ -100,25 +93,18 @@
             return username || 'Guest';
         }
 
-        // Function to send a message
         function sendMessage() {
             const message = messageInput.value.trim();
             if (message) {
                 const username = getUsername();
                 const newMessageRef = database.ref('messages').push();
-                newMessageRef.set({
-                    username: username,
-                    message: message
-                }).catch(error => {
-                    console.error("Error sending message:", error);
-                });
+                newMessageRef.set({ username, message });
                 messageInput.value = '';
             } else {
                 alert("Message cannot be empty.");
             }
         }
 
-        // Function to add a message to the chat container
         function addMessage(username, message) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message' + (username === getUsername() ? ' user' : '');
@@ -127,18 +113,15 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // DOM elements
         const chatContainer = document.getElementById('chatContainer');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
 
-        // Listen for new messages
         database.ref('messages').on('child_added', (snapshot) => {
             const messageData = snapshot.val();
             addMessage(messageData.username, messageData.message);
         });
 
-        // Load existing messages
         database.ref('messages').once('value', (snapshot) => {
             snapshot.forEach((childSnapshot) => {
                 const messageData = childSnapshot.val();
@@ -146,10 +129,8 @@
             });
         });
 
-        // Bind the sendMessage function to the Send button
         sendButton.addEventListener('click', sendMessage);
 
-        // Optional: Allow sending messages by pressing Enter
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMessage();
