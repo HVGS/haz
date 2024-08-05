@@ -112,6 +112,7 @@
       firebase.initializeApp(firebaseConfig);
       var database = firebase.database();
       var messagesRef = database.ref('messages');
+      var usersRef = database.ref('users'); // To manage roles
 
       function getUserName() {
         var name = "";
@@ -130,11 +131,12 @@
         var messageInput = document.getElementById('messageInput');
         var message = messageInput.value;
         var userName = getUserName();
+        var userRole = getUserRole();
         if (message && userName) {
           messagesRef.push().set({
             message: message,
             userName: userName,
-            role: "default", // Default role
+            role: userRole,
             timestamp: Date.now()
           });
           messageInput.value = '';
@@ -170,6 +172,28 @@
         }
       }
 
+      function getUserRole() {
+        var role = "default";
+        var userName = getUserName();
+        usersRef.child(userName).once('value', function(snapshot) {
+          var userData = snapshot.val();
+          if (userData && userData.role) {
+            role = userData.role;
+          }
+        });
+        return role;
+      }
+
+      function setRole(role) {
+        var userName = getUserName();
+        if (userName) {
+          usersRef.child(userName).update({ role: role });
+          alert("Role updated to: " + role);
+        } else {
+          alert("User not found.");
+        }
+      }
+
       // Prompt for user name on page load if not set
       if (getUserName()) {
         document.getElementById('chatContainer').style.display = 'flex';
@@ -197,6 +221,9 @@
             alert("Invalid name.");
           }
         };
+
+        // Function to handle the "setRole" console command
+        console.setRole = setRole;
       })();
     });
   </script>
@@ -204,9 +231,9 @@
   <div class="chat-container" id="chatContainer" style="display:none;">
     <div id="messages"></div>
     <div class="input-container">
-      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
+      <button class="secret-button" onclick="sendMessage()">Send</button>
       <input type="text" id="messageInput" placeholder="Type a message" />
-      <button onclick="sendMessage()">Send</button>
+      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
     </div>
   </div>
 </body>
