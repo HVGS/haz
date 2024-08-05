@@ -15,15 +15,16 @@
       background-color: #f0f0f0;
     }
     .chat-container {
-      flex: 1;
       display: flex;
       flex-direction: column;
+      flex: 1;
       padding: 20px;
       background-color: #ffffff;
       border: 1px solid #ddd;
       border-radius: 5px;
       overflow: auto;
       margin: 20px;
+      position: relative;
     }
     .message {
       padding: 10px;
@@ -40,6 +41,10 @@
       padding: 10px;
       background-color: #fff;
       border-top: 1px solid #ddd;
+      position: absolute;
+      bottom: 0;
+      width: calc(100% - 40px); /* Adjust width to fit within margins */
+      left: 20px; /* Match left margin */
     }
     .input-container input {
       flex: 1;
@@ -62,7 +67,12 @@
   </style>
 </head>
 <body>
-  <div class="chat-container">
+  <div id="namePrompt">
+    <label for="userName">Enter your name:</label>
+    <input type="text" id="userName" />
+    <button onclick="setUserName()">Submit</button>
+  </div>
+  <div class="chat-container" id="chatContainer" style="display:none;">
     <div id="messages"></div>
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
@@ -84,38 +94,66 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
-
-    // Reference to messages in the database
     var messagesRef = database.ref('messages');
 
-    // Function to send a message
+    function setUserName() {
+      var userName = document.getElementById('userName').value;
+      if (userName) {
+        document.cookie = "userName=" + encodeURIComponent(userName) + ";path=/";
+        document.getElementById('namePrompt').style.display = 'none';
+        document.getElementById('chatContainer').style.display = 'flex';
+        displayMessages();
+      }
+    }
+
+    function getUserName() {
+      var name = "";
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim();
+        if (cookie.startsWith("userName=")) {
+          name = decodeURIComponent(cookie.substring("userName=".length));
+          break;
+        }
+      }
+      return name;
+    }
+
     function sendMessage() {
       var messageInput = document.getElementById('messageInput');
       var message = messageInput.value;
-      if (message) {
+      var userName = getUserName();
+      if (message && userName) {
         messagesRef.push().set({
           message: message,
+          userName: userName,
           timestamp: Date.now()
         });
         messageInput.value = '';
       }
     }
 
-    // Function to display messages
     function displayMessages() {
       var messagesDiv = document.getElementById('messages');
       messagesDiv.innerHTML = '';
       messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
         var messageData = snapshot.val();
         var messageElement = document.createElement('div');
-        messageElement.textContent = messageData.message;
+        messageElement.textContent = messageData.userName + ": " + messageData.message;
         messageElement.className = 'message';
+        if (messageData.userName === getUserName()) {
+          messageElement.classList.add('user');
+        }
         messagesDiv.appendChild(messageElement);
       });
     }
 
-    // Load messages on page load
-    displayMessages();
+    // Check if userName is set in cookies
+    if (getUserName()) {
+      document.getElementById('namePrompt').style.display = 'none';
+      document.getElementById('chatContainer').style.display = 'flex';
+      displayMessages();
+    }
   </script>
 </body>
 </html>
