@@ -109,17 +109,30 @@
       function promptForUserName() {
         var userName = prompt("Enter your name:");
         if (userName) {
-          var userUUID = generateUUID();
-          document.cookie = "userUUID=" + userUUID + ";path=/";
-          usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
-            if (error) {
-              alert("Error setting user name.");
+          checkUserName(userName, function(exists) {
+            if (exists) {
+              alert("Name taken, please choose another.");
+              promptForUserName(); // Prompt again if name is taken
             } else {
-              document.getElementById('chatContainer').style.display = 'flex';
-              displayMessages();
+              var userUUID = generateUUID();
+              document.cookie = "userUUID=" + userUUID + ";path=/";
+              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
+                if (error) {
+                  alert("Error setting user name.");
+                } else {
+                  document.getElementById('chatContainer').style.display = 'flex';
+                  displayMessages();
+                }
+              });
             }
           });
         }
+      }
+
+      function checkUserName(userName, callback) {
+        usersRef.orderByChild('name').equalTo(userName).once('value', function(snapshot) {
+          callback(snapshot.exists());
+        });
       }
 
       function generateUUID() {
