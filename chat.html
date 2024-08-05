@@ -30,11 +30,16 @@
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
-      background-color: #e0e0e0;
       text-align: left; /* Ensures text alignment is left */
     }
-    .message.user {
-      background-color: #cce5ff;
+    .message.default {
+      background-color: #e0e0e0;
+    }
+    .message.ChickenMan {
+      background-color: #f8d7da;
+    }
+    .message.Idiots {
+      background-color: #e2a8e2;
     }
     .input-container {
       display: flex;
@@ -129,6 +134,7 @@
           messagesRef.push().set({
             message: message,
             userName: userName,
+            role: "default", // Default role
             timestamp: Date.now()
           });
           messageInput.value = '';
@@ -142,7 +148,7 @@
           var messageData = snapshot.val();
           var messageElement = document.createElement('div');
           messageElement.textContent = messageData.userName + ": " + messageData.message;
-          messageElement.className = 'message';
+          messageElement.className = 'message ' + messageData.role;
           if (messageData.userName === getUserName()) {
             messageElement.classList.add('user');
           }
