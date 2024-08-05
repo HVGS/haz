@@ -116,7 +116,7 @@
       firebase.initializeApp(firebaseConfig);
       var database = firebase.database();
       var messagesRef = database.ref('messages');
-      var usersRef = database.ref('users'); // To manage user roles
+      var usersRef = database.ref('users'); // To manage user roles and names
 
       function getUserUUID() {
         var uuid = "";
@@ -136,18 +136,12 @@
         var message = messageInput.value;
         var userUUID = getUserUUID();
         if (message && userUUID) {
-          usersRef.child(userUUID).once('value', function(snapshot) {
-            var userData = snapshot.val();
-            var userName = userData ? userData.name : 'Unknown';
-            var userRole = userData ? userData.role : 'default';
-            messagesRef.push().set({
-              message: message,
-              userName: userName,
-              role: userRole,
-              timestamp: Date.now()
-            });
-            messageInput.value = '';
+          messagesRef.push().set({
+            message: message,
+            uuid: userUUID,
+            timestamp: Date.now()
           });
+          messageInput.value = '';
         }
       }
 
@@ -156,10 +150,15 @@
         messagesDiv.innerHTML = '';
         messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
           var messageData = snapshot.val();
-          var messageElement = document.createElement('div');
-          messageElement.textContent = messageData.userName + ": " + messageData.message;
-          messageElement.className = 'message ' + messageData.role;
-          messagesDiv.appendChild(messageElement);
+          usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
+            var userData = userSnapshot.val();
+            var userName = userData ? userData.name : 'Unknown';
+            var userRole = userData ? userData.role : 'default';
+            var messageElement = document.createElement('div');
+            messageElement.textContent = userName + ": " + messageData.message;
+            messageElement.className = 'message ' + userRole;
+            messagesDiv.appendChild(messageElement);
+          });
         });
       }
 
