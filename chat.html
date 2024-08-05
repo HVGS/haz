@@ -132,8 +132,8 @@
         function promptForUserName(isSignup) {
           var userName = prompt("Enter your name:");
           if (userName) {
-            userName = userName.trim().toLowerCase(); // For case-insensitive comparison
-            checkUserName(userName, isSignup, function(exists) {
+            userName = userName.trim(); // Keep case-sensitive display name
+            checkUserName(userName.toLowerCase(), isSignup, function(exists) {
               if (exists && isSignup) {
                 alert("Name taken, please choose another.");
                 promptForUserName(true); // Prompt again if name is taken
@@ -169,14 +169,14 @@
         }
 
         function checkUserName(userName, isSignup, callback) {
-          var query = usersRef.orderByChild('name').equalTo(userName);
+          var query = usersRef.orderByChild('nameLower').equalTo(userName);
           query.once('value', function(snapshot) {
             callback(snapshot.exists());
           });
         }
 
         function authenticateUser(userName, password, callback) {
-          var query = usersRef.orderByChild('name').equalTo(userName);
+          var query = usersRef.orderByChild('nameLower').equalTo(userName.toLowerCase());
           query.once('value', function(snapshot) {
             var exists = false;
             snapshot.forEach(function(childSnapshot) {
