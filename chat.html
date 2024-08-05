@@ -77,31 +77,6 @@
 <body>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Function to prompt for the user's name and generate a UUID
-      function promptForUserName() {
-        var userName = prompt("Enter your name:");
-        if (userName) {
-          var userUUID = generateUUID();
-          document.cookie = "userUUID=" + userUUID + ";path=/";
-          usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
-            if (error) {
-              alert("Error setting user name.");
-            } else {
-              document.getElementById('chatContainer').style.display = 'flex';
-              displayMessages();
-            }
-          });
-        }
-      }
-
-      function generateUUID() {
-        // Simple UUID generator function
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      }
-
       // Firebase configuration
       var firebaseConfig = {
         apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
@@ -129,6 +104,30 @@
           }
         }
         return uuid;
+      }
+
+      function promptForUserName() {
+        var userName = prompt("Enter your name:");
+        if (userName) {
+          var userUUID = generateUUID();
+          document.cookie = "userUUID=" + userUUID + ";path=/";
+          usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
+            if (error) {
+              alert("Error setting user name.");
+            } else {
+              document.getElementById('chatContainer').style.display = 'flex';
+              displayMessages();
+            }
+          });
+        }
+      }
+
+      function generateUUID() {
+        // Simple UUID generator function
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
       }
 
       function sendMessage() {
@@ -234,6 +233,9 @@
 
         window.console.setRole = setRole;
       })();
+
+      // Expose accessSecretChat function to global scope
+      window.accessSecretChat = accessSecretChat;
     });
   </script>
 
