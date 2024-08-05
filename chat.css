@@ -10,44 +10,14 @@ body {
 .chat-container {
   display: flex;
   flex-direction: column;
-  width: 60%;
-  height: 80vh;
-  margin: auto;
+  flex: 1;
   padding: 20px;
   background-color: #ffffff;
   border: 1px solid #ddd;
   border-radius: 5px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.input-container {
-  display: flex;
-  align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid #ddd;
-  background-color: #f9f9f9;
-}
-
-#messageInput {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-right: 10px;
-}
-
-.secret-button {
-  padding: 10px 15px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.secret-button:hover {
-  background-color: #0056b3;
+  margin: 20px;
+  position: relative;
 }
 
 #messages {
@@ -57,15 +27,59 @@ body {
 }
 
 .message {
-  margin: 10px 0;
   padding: 10px;
+  margin-bottom: 10px;
   border-radius: 5px;
   background-color: #e0e0e0;
   word-wrap: break-word;
 }
 
+.message.default {
+  background-color: #e0e0e0;
+}
+
 .message.admin {
   color: darkred;
+}
+
+.message.ChickenMan {
+  background-color: #f8d7da;
+}
+
+.message.Idiots {
+  background-color: #e2a8e2;
+}
+
+.input-container {
+  display: flex;
+  padding: 10px;
+  background-color: #fff;
+  border-top: 1px solid #ddd;
+  position: absolute;
+  bottom: 0;
+  width: calc(100% - 40px);
+  left: 20px;
+}
+
+.input-container input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-right: 10px;
+}
+
+.secret-button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #f8d7da;
+  color: #721c24;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.secret-button:hover {
+  background-color: #f5c6cb;
 }
 
 #beastModePanel {
@@ -79,6 +93,7 @@ body {
   border: 1px solid #ddd;
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  z-index: 1000;
 }
 
 #beastModePanel button {
