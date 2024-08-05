@@ -221,4 +221,166 @@
                       displayMessages();
                     } else {
                       alert("Wrong password, try again.");
-              
+                      promptForUserName(false);
+                    }
+                  });
+                });
+              } else {
+                var password = prompt("Enter a password:");
+                var userUUID = generateUUID();
+                document.cookie = "userUUID=" + userUUID + ";path=/";
+                usersRef.child(userUUID).set({ name: userName, nameLower: lowerCaseName, role: "default", password: password }, function(error) {
+                  if (error) {
+                    alert("Error creating user.");
+                  } else {
+                    document.getElementById('chatContainer').style.display = 'flex';
+                    displayMessages();
+                  }
+                });
+              }
+            });
+          }
+        }
+
+        function checkUserName(userName, isSignup, callback) {
+          var query = usersRef.orderByChild('nameLower').equalTo(userName);
+          query.once('value', function(snapshot) {
+            callback(snapshot.exists());
+          });
+        }
+
+        function promptForPassword(callback) {
+          var password = prompt("Enter your password:");
+          callback(password);
+        }
+
+        function authenticateUser(userName, password, callback) {
+          var query = usersRef.orderByChild('nameLower').equalTo(userName);
+          query.once('value', function(snapshot) {
+            if (snapshot.exists()) {
+              snapshot.forEach(function(childSnapshot) {
+                var userData = childSnapshot.val();
+                if (userData.password === password) {
+                  document.cookie = "userUUID=" + childSnapshot.key + ";path=/";
+                  callback(true);
+                } else {
+                  callback(false);
+                }
+              });
+            } else {
+              callback(false);
+            }
+          });
+        }
+
+        function generateUUID() {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        }
+
+        function sendMessage() {
+          var messageInput = document.getElementById('messageInput');
+          var message = messageInput.value;
+          var userUUID = getUserUUID();
+          if (message && userUUID) {
+            messagesRef.push().set({
+              message: message,
+              uuid: userUUID,
+              timestamp: Date.now()
+            });
+            messageInput.value = '';
+          }
+        }
+
+        function displayMessages() {
+          var messagesDiv = document.getElementById('messages');
+          messagesDiv.innerHTML = ''; // Clear previous messages
+          messagesRef.on('child_added', function(snapshot) {
+            var messageData = snapshot.val();
+            usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
+              var userData = userSnapshot.val();
+              var userName = userData ? userData.name : 'Unknown';
+              var userRole = userData ? userData.role : 'default';
+              var messageElement = document.createElement('div');
+              messageElement.textContent = userName + ": " + messageData.message;
+              messageElement.className = 'message ' + userRole + (messageData.uuid === getUserUUID() ? ' self' : '');
+              messagesDiv.appendChild(messageElement);
+              messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
+            });
+          });
+        }
+
+        function accessSecretChat() {
+          if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
+            window.location.href = 'chickenchat.html';
+          } else {
+            var passcode = prompt("Enter passcode:");
+            if (passcode && passcode.trim().toUpperCase() === 'PUTTHECHICKENONTHEPIZZA') {
+              document.cookie = "cpizza=true;path=/";
+              window.location.href = 'chickenchat.html';
+            } else {
+              alert("Invalid passcode.");
+            }
+          }
+        }
+
+        function clearChat() {
+          messagesRef.remove(); // Remove all messages
+          messagesRef.push().set({
+            message: "Chat cleared",
+            uuid: "adminUUID", // Use a placeholder for admin
+            timestamp: Date.now()
+          });
+        }
+
+        function setRole(role) {
+          var userUUID = getUserUUID();
+          if (userUUID) {
+            usersRef.child(userUUID).update({ role: role }, function(error) {
+              if (error) {
+                alert("Error updating role.");
+              } else {
+                alert("Role updated to: " + role);
+              }
+            });
+          } else {
+            alert("User not found.");
+          }
+        }
+
+        function showBeastmode() {
+          var popup = document.getElementById('beastmodePopup');
+          popup.style.display = 'block';
+        }
+
+        function closeBeastMode() {
+          var popup = document.getElementById('beastmodePopup');
+          popup.style.display = 'none';
+        }
+
+        // Initialize chat
+        promptForLoginOrSignup();
+
+        // Add event listener for Enter key to send messages
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            sendMessage();
+          }
+        });
+
+        // Expose functions to global scope
+        window.accessSecretChat = accessSecretChat;
+        window.clearChat = clearChat;
+        window.showBeastmode = showBeastmode;
+        window.closeBeastMode = closeBeastMode;
+      } catch (error) {
+        console.error("Error initializing chat:", error);
+        document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
