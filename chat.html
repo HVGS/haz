@@ -134,7 +134,8 @@
       function signup() {
         var name = prompt("Enter your desired username:");
         if (name) {
-          checkUserName(name, function(exists) {
+          var lowerCaseName = name.toLowerCase();
+          checkUserName(lowerCaseName, function(exists) {
             if (exists) {
               alert("Name taken, please choose another.");
               signup();
@@ -164,7 +165,7 @@
       }
 
       function login() {
-        var name = prompt("Enter your username:");
+        var name = prompt("Enter your username:").toLowerCase();
         if (name) {
           var password = prompt("Enter your password:");
           if (password) {
@@ -195,10 +196,10 @@
         }
       }
 
-      function checkAccess() {
-        if (!document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
-          window.location.href = 'chat.html';
-        }
+      function checkUserName(userName, callback) {
+        usersRef.orderByChild('name').equalTo(userName).once('value', function(snapshot) {
+          callback(snapshot.exists());
+        });
       }
 
       function sendMessage() {
