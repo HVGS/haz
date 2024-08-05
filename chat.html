@@ -131,14 +131,15 @@
           var userName = prompt("Enter your name:");
           if (userName) {
             userName = userName.trim(); // Keep case-sensitive display name
-            checkUserName(userName.toLowerCase(), isSignup, function(exists) {
+            var lowerCaseName = userName.toLowerCase();
+            checkUserName(lowerCaseName, isSignup, function(exists) {
               if (exists && isSignup) {
                 alert("Name taken, please choose another.");
                 promptForUserName(true); // Prompt again if name is taken
               } else if (exists && !isSignup) {
                 // Login process
                 promptForPassword(function(password) {
-                  authenticateUser(userName, password, function(success) {
+                  authenticateUser(lowerCaseName, password, function(success) {
                     if (success) {
                       document.getElementById('chatContainer').style.display = 'flex';
                       displayMessages();
@@ -153,7 +154,7 @@
                 var password = prompt("Enter a password:");
                 var userUUID = generateUUID();
                 document.cookie = "userUUID=" + userUUID + ";path=/";
-                usersRef.child(userUUID).set({ name: userName, role: "default", password: password }, function(error) {
+                usersRef.child(userUUID).set({ name: userName, nameLower: lowerCaseName, role: "default", password: password }, function(error) {
                   if (error) {
                     alert("Error creating user.");
                   } else {
@@ -174,7 +175,7 @@
         }
 
         function authenticateUser(userName, password, callback) {
-          var query = usersRef.orderByChild('nameLower').equalTo(userName.toLowerCase());
+          var query = usersRef.orderByChild('nameLower').equalTo(userName);
           query.once('value', function(snapshot) {
             var exists = false;
             snapshot.forEach(function(childSnapshot) {
@@ -254,13 +255,30 @@
           <div class="chat-container" id="chatContainer" style="display:none;">
             <div id="messages"></div>
             <div class="input-container">
-              <input type="text" id="messageInput" placeholder="Type a message..."/>
+              <input type="text" id="messageInput" placeholder="Type a message" />
               <button class="secret-button" onclick="accessSecretChat()">Secret</button>
             </div>
           </div>
         `;
 
         promptForLoginOrSignup();
+
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            sendMessage();
+          }
+        });
+
+        window.console.rename = function(name) {
+          if (typeof name === 'string' && name.trim()) {
+            updateUserName(name);
+          } else {
+            alert("Invalid name.");
+          }
+        };
+
+        window.console.setRole = setRole;
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
