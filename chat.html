@@ -22,7 +22,7 @@
       background-color: #ffffff;
       border: 1px solid #ddd;
       border-radius: 5px;
-      overflow-y: auto;
+      overflow-y: auto; /* Make the chat container scrollable */
       margin: 20px;
       position: relative;
     }
@@ -30,7 +30,7 @@
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
-      text-align: left;
+      text-align: left; /* Align names to the left */
     }
     .message.default {
       background-color: #e0e0e0;
@@ -46,7 +46,7 @@
       color: #000;
     }
     .message.admin {
-      background-color: #d6a5a5;
+      background-color: #d6a5a5; /* Dark red */
       color: #000;
     }
     .input-container {
@@ -74,7 +74,7 @@
     .input-container .secret-button {
       background-color: #f8d7da;
       color: #721c24;
-      margin-left: 10px;
+      margin-left: 10px; /* Ensure spacing between input field and button */
     }
     .input-container .secret-button:hover {
       background-color: #f5c6cb;
@@ -91,6 +91,9 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       padding: 20px;
       z-index: 1000;
+      max-width: 400px; /* Optional: set a max width for the popup */
+      width: 100%; /* Ensure it takes full width of the container */
+      box-sizing: border-box; /* Include padding and border in the element's total width and height */
     }
     .popup button {
       display: block;
@@ -110,8 +113,29 @@
       background-color: #e0e0e0;
     }
     .popup button.clear-chat {
-      background-color: #d6a5a5;
+      background-color: #d6a5a5; /* Dark red */
       color: #000;
+    }
+    .popup .close-button {
+      background-color: #007bff;
+      color: #fff;
+    }
+    .popup .close-button:hover {
+      background-color: #0056b3;
+    }
+    .popup .done-button {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .popup .done-button:hover {
+      background-color: #218838;
+    }
+    .popup .cancel-button {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    .popup .cancel-button:hover {
+      background-color: #c82333;
     }
   </style>
 </head>
@@ -129,6 +153,9 @@
     <button class="Idiots" onclick="setRole('Idiots')">Idiots</button>
     <button class="default" onclick="setRole('default')">Default</button>
     <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
+    <button class="done-button" onclick="closeBeastMode()">Done</button>
+    <button class="cancel-button" onclick="closeBeastMode()">Cancel</button>
+    <button class="close-button" onclick="closeBeastMode()">Back</button>
   </div>
 
   <script>
@@ -227,29 +254,28 @@
           });
         }
 
+        function promptForPassword(callback) {
+          var password = prompt("Enter your password:");
+          callback(password);
+        }
+
         function authenticateUser(userName, password, callback) {
           var query = usersRef.orderByChild('nameLower').equalTo(userName);
           query.once('value', function(snapshot) {
-            var exists = false;
-            snapshot.forEach(function(childSnapshot) {
-              var userData = childSnapshot.val();
-              if (userData.password === password) {
-                document.cookie = "userUUID=" + childSnapshot.key + ";path=/";
-                exists = true;
-              }
-            });
-            callback(exists);
+            if (snapshot.exists()) {
+              snapshot.forEach(function(childSnapshot) {
+                var userData = childSnapshot.val();
+                if (userData.password === password) {
+                  document.cookie = "userUUID=" + childSnapshot.key + ";path=/";
+                  callback(true);
+                } else {
+                  callback(false);
+                }
+              });
+            } else {
+              callback(false);
+            }
           });
-        }
-
-        function promptForPassword(callback) {
-          var password = prompt("Enter your password:");
-          if (password) {
-            callback(password);
-          } else {
-            alert("Password required.");
-            promptForPassword(callback); // Retry password prompt
-          }
         }
 
         function generateUUID() {
@@ -361,6 +387,11 @@
           popup.style.display = 'block';
         }
 
+        function closeBeastMode() {
+          var popup = document.getElementById('beastmodePopup');
+          popup.style.display = 'none';
+        }
+
         // Initialize chat
         promptForLoginOrSignup();
 
@@ -376,6 +407,7 @@
         window.accessSecretChat = accessSecretChat;
         window.clearChat = clearChat;
         window.showBeastmode = showBeastmode;
+        window.closeBeastMode = closeBeastMode;
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
