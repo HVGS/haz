@@ -61,26 +61,15 @@
     .input-container button {
       padding: 10px 20px;
       border: none;
-      background-color: #007bff;
-      color: white;
       border-radius: 5px;
       cursor: pointer;
     }
-    .input-container button:hover {
-      background-color: #0056b3;
-    }
-    .secret-button {
+    .input-container .secret-button {
       background-color: #f8d7da;
       color: #721c24;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      position: absolute;
-      left: 20px;
-      bottom: 10px;
+      margin-left: 10px; /* Ensure spacing between input field and button */
     }
-    .secret-button:hover {
+    .input-container .secret-button:hover {
       background-color: #f5c6cb;
     }
   </style>
@@ -88,13 +77,13 @@
 <body>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Function to prompt for the user's name
+      // Function to prompt for the user's name and generate a UUID
       function promptForUserName() {
         var userName = prompt("Enter your name:");
         if (userName) {
-          var encodedName = encodeURIComponent(userName);
-          document.cookie = "userName=" + encodedName + ";path=/";
-          usersRef.child(encodedName).set({ name: userName, role: "default" }, function(error) {
+          var userUUID = generateUUID();
+          document.cookie = "userUUID=" + userUUID + ";path=/";
+          usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
             if (error) {
               alert("Error setting user name.");
             } else {
@@ -103,6 +92,14 @@
             }
           });
         }
+      }
+
+      function generateUUID() {
+        // Simple UUID generator function
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
       }
 
       // Firebase configuration
@@ -119,34 +116,38 @@
       firebase.initializeApp(firebaseConfig);
       var database = firebase.database();
       var messagesRef = database.ref('messages');
-      var usersRef = database.ref('users'); // To manage roles
+      var usersRef = database.ref('users'); // To manage user roles
 
-      function getUserName() {
-        var name = "";
+      function getUserUUID() {
+        var uuid = "";
         var cookies = document.cookie.split(';');
         for (var i = 0; i < cookies.length; i++) {
           var cookie = cookies[i].trim();
-          if (cookie.startsWith("userName=")) {
-            name = decodeURIComponent(cookie.substring("userName=".length));
+          if (cookie.startsWith("userUUID=")) {
+            uuid = cookie.substring("userUUID=".length);
             break;
           }
         }
-        return name;
+        return uuid;
       }
 
       function sendMessage() {
         var messageInput = document.getElementById('messageInput');
         var message = messageInput.value;
-        var userName = getUserName();
-        var userRole = getUserRole();
-        if (message && userName) {
-          messagesRef.push().set({
-            message: message,
-            userName: userName,
-            role: userRole,
-            timestamp: Date.now()
+        var userUUID = getUserUUID();
+        if (message && userUUID) {
+          usersRef.child(userUUID).once('value', function(snapshot) {
+            var userData = snapshot.val();
+            var userName = userData ? userData.name : 'Unknown';
+            var userRole = userData ? userData.role : 'default';
+            messagesRef.push().set({
+              message: message,
+              userName: userName,
+              role: userRole,
+              timestamp: Date.now()
+            });
+            messageInput.value = '';
           });
-          messageInput.value = '';
         }
       }
 
@@ -158,9 +159,6 @@
           var messageElement = document.createElement('div');
           messageElement.textContent = messageData.userName + ": " + messageData.message;
           messageElement.className = 'message ' + messageData.role;
-          if (messageData.userName === getUserName()) {
-            messageElement.classList.add('user');
-          }
           messagesDiv.appendChild(messageElement);
         });
       }
@@ -179,24 +177,10 @@
         }
       }
 
-      function getUserRole() {
-        var role = "default";
-        var userName = getUserName();
-        if (userName) {
-          usersRef.child(userName).once('value', function(snapshot) {
-            var userData = snapshot.val();
-            if (userData && userData.role) {
-              role = userData.role;
-            }
-          });
-        }
-        return role;
-      }
-
       function setRole(role) {
-        var userName = getUserName();
-        if (userName) {
-          usersRef.child(userName).update({ role: role }, function(error) {
+        var userUUID = getUserUUID();
+        if (userUUID) {
+          usersRef.child(userUUID).update({ role: role }, function(error) {
             if (error) {
               alert("Error updating role.");
             } else {
@@ -209,21 +193,13 @@
       }
 
       function updateUserName(newName) {
-        var oldName = getUserName();
-        if (oldName && newName) {
-          usersRef.child(oldName).remove(function(error) {
+        var userUUID = getUserUUID();
+        if (userUUID && newName) {
+          usersRef.child(userUUID).update({ name: newName }, function(error) {
             if (error) {
-              alert("Error removing old user.");
+              alert("Error updating user name.");
             } else {
-              document.cookie = "userName=" + encodeURIComponent(newName) + ";path=/";
-              usersRef.child(newName).set({ name: newName, role: "default" }, function(error) {
-                if (error) {
-                  alert("Error setting new user name.");
-                } else {
-                  alert("User name updated to: " + newName);
-                  displayMessages();
-                }
-              });
+              alert("User name updated to: " + newName);
             }
           });
         } else {
@@ -232,7 +208,7 @@
       }
 
       // Prompt for user name on page load if not set
-      if (getUserName()) {
+      if (getUserUUID()) {
         document.getElementById('chatContainer').style.display = 'flex';
         displayMessages();
       } else {
@@ -266,7 +242,6 @@
     <div id="messages"></div>
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
-      <button onclick="sendMessage()">Send</button>
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
     </div>
   </div>
