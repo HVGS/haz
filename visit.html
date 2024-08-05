@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Visits</title>
+    <script>
+        // Utility functions
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        function eraseCookie(name) {   
+            document.cookie = name + '=; Max-Age=-99999999;';  
+        }
+
+        function getDeviceInfo() {
+            const deviceName = navigator.platform;
+            const deviceType = navigator.userAgent;
+            return { deviceName, deviceType };
+        }
+
+        function trackVisit() {
+            const today = new Date().toISOString().split('T')[0];
+            const cookieName = 'visitCounter_' + today;
+            let visits = parseInt(getCookie(cookieName)) || 0;
+            visits++;
+            setCookie(cookieName, visits, 1);  // Cookie expires in 1 day
+
+            const { deviceName, deviceType } = getDeviceInfo();
+            let visitData = JSON.parse(getCookie('visitData') || '{}');
+            if (!visitData[today]) {
+                visitData[today] = [];
+            }
+            visitData[today].push({ deviceName, deviceType });
+            setCookie('visitData', JSON.stringify(visitData), 7);  // Cookie expires in 7 days
+        }
+
+        function viewVisits() {
+            const visitData = JSON.parse(getCookie('visitData') || '{}');
+            const blob = new Blob([JSON.stringify(visitData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'visitData.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Track visit on page load
+        window.onload = trackVisit;
+    </script>
+</head>
+<body>
+    <button onclick="viewVisits()">Export Visit Data</button>
+</body>
+</html>
