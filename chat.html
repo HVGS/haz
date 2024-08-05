@@ -115,26 +115,12 @@
       background-color: #d6a5a5;
       color: #000;
     }
-    .popup .close-button {
-      background-color: #007bff;
-      color: #fff;
-    }
-    .popup .close-button:hover {
-      background-color: #0056b3;
-    }
     .popup .done-button {
       background-color: #28a745;
       color: #fff;
     }
     .popup .done-button:hover {
       background-color: #218838;
-    }
-    .popup .cancel-button {
-      background-color: #dc3545;
-      color: #fff;
-    }
-    .popup .cancel-button:hover {
-      background-color: #c82333;
     }
   </style>
 </head>
@@ -153,8 +139,6 @@
     <button class="default" onclick="setRole('default')">Default</button>
     <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
     <button class="done-button" onclick="closeBeastMode()">Done</button>
-    <button class="cancel-button" onclick="closeBeastMode()">Cancel</button>
-    <button class="close-button" onclick="closeBeastMode()">Back</button>
   </div>
 
   <script>
@@ -330,7 +314,7 @@
           messagesRef.remove(); // Remove all messages
           messagesRef.push().set({
             message: "Chat cleared",
-            uuid: "adminUUID", // Use a placeholder for admin
+            uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f", // Admin UUID
             timestamp: Date.now()
           });
         }
