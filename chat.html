@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Chat Forum</title>
+  <!-- Import Firebase libraries from CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
 </head>
@@ -36,7 +37,7 @@
       const messageInput = document.getElementById('messageInput');
       const message = messageInput.value;
       if (message) {
-        messagesRef.push().set({
+        messagesRef.push({
           message: message,
           timestamp: Date.now()
         });
