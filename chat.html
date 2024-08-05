@@ -134,7 +134,7 @@
             } else {
               var userUUID = generateUUID();
               document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, role: "default", nameLower: userName.toLowerCase() }, function(error) {
+              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
                 if (error) {
                   alert("Error setting user name.");
                 } else {
@@ -277,37 +277,63 @@
         });
       }
 
-      document.getElementById('sendMessage').addEventListener('click', sendMessage);
-      document.getElementById('beastModeButton').addEventListener('click', showBeastMode);
-      document.getElementById('clearChatButton').addEventListener('click', clearChat);
-      document.getElementById('lockChatButton').addEventListener('click', lockChat);
-      document.getElementById('unlockChatButton').addEventListener('click', unlockChat);
-
-      // Initial prompt for user name if not set
-      if (!getUserUUID()) {
-        promptForUserName();
-      } else {
+      // Prompt for user name on page load if not set
+      if (getUserUUID()) {
         document.getElementById('chatContainer').style.display = 'flex';
         displayMessages();
+      } else {
+        promptForUserName();
       }
+
+      // Add event listener for Enter key to send messages
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault(); // Prevent default Enter key behavior (e.g., form submission)
+          if (!chatLocked) {
+            sendMessage();
+          }
+        }
+      });
+
+      // Define console commands globally
+      (function() {
+        window.console.rename = function(name) {
+          if (typeof name === 'string' && name.trim()) {
+            updateUserName(name);
+          } else {
+            alert("Invalid name.");
+          }
+        };
+
+        window.console.setRole = function(role) {
+          setRole(role);
+        };
+
+        window.console.showBeastMode = showBeastMode;
+        window.console.clearChat = clearChat;
+        window.console.lockChat = lockChat;
+        window.console.unlockChat = unlockChat;
+      })();
+
+      // Expose accessSecretChat function to global scope
+      window.accessSecretChat = accessSecretChat;
     });
   </script>
 
-  <div id="chatContainer" style="display: none;">
-    <div id="messages" class="chat-container"></div>
+  <div class="chat-container" id="chatContainer" style="display:none;">
+    <div id="messages" style="flex: 1; overflow-y: auto;"></div>
     <div class="input-container">
-      <input type="text" id="messageInput" placeholder="Type a message">
-      <button id="sendMessage">Send</button>
-      <button id="beastModeButton" class="secret-button">Beast Mode</button>
+      <input type="text" id="messageInput" placeholder="Type a message" />
+      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
     </div>
   </div>
 
   <div id="beastModePanel">
-    <button onclick="setRole('admin')">Set Role to Admin</button>
-    <button onclick="setRole('default')">Set Role to Default</button>
+    <button onclick="setRole('admin')">Admin</button>
+    <button onclick="setRole('default')">Default</button>
     <button onclick="lockChat()">Lock Chat</button>
     <button onclick="unlockChat()">Unlock Chat</button>
-    <button id="clearChatButton">Clear Chat</button>
+    <button onclick="clearChat()">Clear Chat</button>
   </div>
 </body>
 </html>
