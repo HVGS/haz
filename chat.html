@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Chat Forum</title>
+  <link id="favicon" rel="icon" href="favicon.ico" type="image/x-icon">
   <!-- Import Firebase libraries from CDN -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -132,7 +133,49 @@
     <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
   </div>
 
-  <script>
+    <script>
+  function createFaviconWithDot() {
+    var canvas = document.createElement('canvas');
+    var size = 32; // Size of the favicon
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+
+    // Draw the base favicon
+    ctx.fillStyle = '#000000'; // Set the base color (e.g., black)
+    ctx.fillRect(0, 0, size, size);
+
+    // Draw the red dot
+    ctx.beginPath();
+    ctx.arc(size - 8, 8, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+
+    return canvas.toDataURL('image/x-icon');
+  }
+
+  function updateFavicon(hasUnreadMessages) {
+    var favicon = document.getElementById('favicon');
+    if (hasUnreadMessages) {
+      favicon.href = createFaviconWithDot();
+    } else {
+      favicon.href = 'favicon.ico'; // Default favicon
+    }
+  }
+
+  // Example: Call updateFavicon based on your app's state
+  function checkForUnreadMessages() {
+    // Logic to check for unread messages
+    var hasUnreadMessages = true; // Replace with actual logic
+
+    // Update favicon based on unread messages
+    updateFavicon(hasUnreadMessages);
+  }
+
+  // Check for unread messages periodically (e.g., every 10 seconds)
+  setInterval(checkForUnreadMessages, 10000);
+</script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
       try {
         // Firebase configuration
