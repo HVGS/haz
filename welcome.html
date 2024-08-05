@@ -62,12 +62,17 @@
     </div>
 
     <script>
-        // Check for the "itsame" cookie and redirect if not present
-        function checkCookie() {
+        // Check for the "itsame" and "itsafraud" cookies and redirect if necessary
+        function checkCookies() {
             const cookies = document.cookie.split(';').map(cookie => cookie.trim());
-            const cookieExists = cookies.some(cookie => cookie.startsWith('itsame='));
+            const itsameExists = cookies.some(cookie => cookie.startsWith('itsame='));
+            const itsafraudExists = cookies.some(cookie => cookie.startsWith('itsafraud='));
 
-            if (!cookieExists) {
+            if (itsafraudExists) {
+                // Remove both cookies
+                document.cookie = 'itsame=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                document.cookie = 'itsafraud=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+            } else if (!itsameExists) {
                 window.location.href = 'index.html';
             }
         }
@@ -94,14 +99,13 @@
             dayWeekDisplay.textContent = `${dayOfWeek}, ${week}`;
         }
 
-        // Function to remove the "itsame" cookie
+        // Function to add the "itsafraud" cookie
         function itsafraud() {
-            document.cookie = 'itsame=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-            window.location.href = 'index.html'; // Redirect after removing cookie
+            document.cookie = 'itsafraud=true; path=/';
         }
 
-        // Initialize display and check cookie
-        checkCookie();
+        // Initialize display and check cookies
+        checkCookies();
         displayDayWeek();
 
         // Make itsafraud() available globally
