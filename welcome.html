@@ -62,6 +62,16 @@
     </div>
 
     <script>
+        // Check for the "itsame" cookie and redirect if not present
+        function checkCookie() {
+            const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+            const cookieExists = cookies.some(cookie => cookie.startsWith('itsame='));
+
+            if (!cookieExists) {
+                window.location.href = 'index.html';
+            }
+        }
+
         // Function to determine the current week
         function getWeek(date) {
             const weekNumber = (date.getWeekNumber() % 2 === 0) ? "A" : "B";
@@ -84,8 +94,18 @@
             dayWeekDisplay.textContent = `${dayOfWeek}, ${week}`;
         }
 
-        // Initialize display
+        // Function to remove the "itsame" cookie
+        function itsafraud() {
+            document.cookie = 'itsame=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+            window.location.href = 'index.html'; // Redirect after removing cookie
+        }
+
+        // Initialize display and check cookie
+        checkCookie();
         displayDayWeek();
+
+        // Make itsafraud() available globally
+        window.itsafraud = itsafraud;
     </script>
 </body>
 </html>
