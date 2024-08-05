@@ -8,6 +8,22 @@
   <link rel="stylesheet" type="text/css" href="chat.css">
 </head>
 <body>
+  <div class="chat-container" id="chatContainer" style="display:none;">
+    <div id="messages"></div>
+    <div class="input-container">
+      <input type="text" id="messageInput" placeholder="Type a message">
+      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
+    </div>
+  </div>
+
+  <div id="beastModePanel">
+    <button onclick="setRole('admin')">Admin</button>
+    <button onclick="setRole('default')">Default</button>
+    <button onclick="lockChat()">Lock Chat</button>
+    <button onclick="unlockChat()">Unlock Chat</button>
+    <button onclick="clearChat()">Clear Chat</button>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Firebase configuration
@@ -24,7 +40,7 @@
       firebase.initializeApp(firebaseConfig);
       var database = firebase.database();
       var messagesRef = database.ref('messages');
-      var usersRef = database.ref('users'); // To manage user roles and names
+      var usersRef = database.ref('users');
 
       function getUserUUID() {
         var uuid = "";
@@ -45,7 +61,7 @@
           checkUserName(userName, function(exists) {
             if (exists) {
               alert("Name taken, please choose another.");
-              promptForUserName(); // Prompt again if name is taken
+              promptForUserName();
             } else {
               var userUUID = generateUUID();
               document.cookie = "userUUID=" + userUUID + ";path=/";
@@ -63,13 +79,12 @@
       }
 
       function checkUserName(userName, callback) {
-        usersRef.orderByChild('nameLowerCase').equalTo(userName.toLowerCase()).once('value', function(snapshot) {
+        usersRef.orderByChild('name_lowercase').equalTo(userName.toLowerCase()).once('value', function(snapshot) {
           callback(snapshot.exists());
         });
       }
 
       function generateUUID() {
-        // Simple UUID generator function
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
           var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
@@ -103,6 +118,7 @@
             messageElement.textContent = userName + ": " + messageData.message;
             messageElement.className = 'message ' + userRole;
             messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom on new message
           });
         });
       }
@@ -136,118 +152,51 @@
         }
       }
 
-      function updateUserName(newName) {
-        var userUUID = getUserUUID();
-        if (userUUID && newName) {
-          usersRef.child(userUUID).update({ name: newName, nameLowerCase: newName.toLowerCase() }, function(error) {
-            if (error) {
-              alert("Error updating user name.");
-            } else {
-              alert("User name updated to: " + newName);
-            }
-          });
-        } else {
-          alert("Error updating user name.");
-        }
+      function lockChat() {
+        var messageInput = document.getElementById('messageInput');
+        messageInput.disabled = true;
+        messageInput.placeholder = 'CHAT IS LOCKED';
+        messagesRef.push().set({
+          message: 'CHAT IS LOCKED',
+          uuid: '3ba4223a-e921-474f-b8ec-1b34d081ba9f',
+          timestamp: Date.now()
+        });
+      }
+
+      function unlockChat() {
+        var messageInput = document.getElementById('messageInput');
+        messageInput.disabled = false;
+        messageInput.placeholder = 'Type a message';
+        messagesRef.push().set({
+          message: 'CHAT IS UNLOCKED',
+          uuid: '3ba4223a-e921-474f-b8ec-1b34d081ba9f',
+          timestamp: Date.now()
+        });
       }
 
       function clearChat() {
         messagesRef.remove().then(function() {
           messagesRef.push().set({
             message: 'CHAT CLEARED',
-            uuid: adminUUID,
+            uuid: '3ba4223a-e921-474f-b8ec-1b34d081ba9f',
             timestamp: Date.now()
           });
           location.reload();
         });
       }
 
-      function showBeastMode() {
-        var beastModePanel = document.getElementById('beastModePanel');
-        beastModePanel.style.display = 'block';
-      }
+      window.showBeastmode = function() {
+        document.getElementById('beastModePanel').style.display = 'block';
+      };
 
-      function lockChat() {
-        chatLocked = true;
-        var messageInput = document.getElementById('messageInput');
-        messageInput.value = 'CHAT IS LOCKED';
-        messageInput.disabled = true;
-        messagesRef.push().set({
-          message: 'CHAT IS LOCKED',
-          uuid: adminUUID,
-          timestamp: Date.now()
-        });
-      }
-
-      function unlockChat() {
-        chatLocked = false;
-        var messageInput = document.getElementById('messageInput');
-        messageInput.value = '';
-        messageInput.disabled = false;
-        messagesRef.push().set({
-          message: 'CHAT IS UNLOCKED',
-          uuid: adminUUID,
-          timestamp: Date.now()
-        });
-      }
-
-      // Prompt for user name on page load if not set
-      if (getUserUUID()) {
-        document.getElementById('chatContainer').style.display = 'flex';
-        displayMessages();
-      } else {
-        promptForUserName();
-      }
-
-      // Add event listener for Enter key to send messages
-      document.addEventListener('keydown', function(event) {
+      document.getElementById('messageInput').addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
-          event.preventDefault(); // Prevent default Enter key behavior (e.g., form submission)
-          if (!chatLocked) {
-            sendMessage();
-          }
+          sendMessage();
         }
       });
 
-      // Define console commands globally
-      (function() {
-        window.console.rename = function(name) {
-          if (typeof name === 'string' && name.trim()) {
-            updateUserName(name);
-          } else {
-            alert("Invalid name.");
-          }
-        };
-
-        window.console.setRole = function(role) {
-          setRole(role);
-        };
-
-        window.console.showBeastMode = showBeastMode;
-        window.console.clearChat = clearChat;
-        window.console.lockChat = lockChat;
-        window.console.unlockChat = unlockChat;
-      })();
-
-      // Expose accessSecretChat function to global scope
-      window.accessSecretChat = accessSecretChat;
+      promptForUserName();
     });
   </script>
-
-  <div class="chat-container" id="chatContainer" style="display:none;">
-    <div id="messages" style="flex: 1; overflow-y: auto;"></div>
-    <div class="input-container">
-      <input type="text" id="messageInput" placeholder="Type a message" />
-      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
-    </div>
-  </div>
-
-  <div id="beastModePanel" style="display: none;">
-    <button onclick="setRole('admin')">Admin</button>
-    <button onclick="setRole('default')">Default</button>
-    <button onclick="lockChat()">Lock Chat</button>
-    <button onclick="unlockChat()">Unlock Chat</button>
-    <button onclick="clearChat()">Clear Chat</button>
-  </div>
 </body>
 </html>
