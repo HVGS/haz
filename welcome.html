@@ -33,7 +33,6 @@
             transform: translateX(-50%);
             font-size: 24px; /* Larger font size */
             color: #FFF;
-            font-weight: bold;
         }
 
         #embed {
@@ -45,10 +44,10 @@
             align-items: center;
         }
 
-        #embed iframe {
+        #embed-content {
             width: 100%;
             height: 100%;
-            border: none;
+            overflow: hidden;
         }
 
         #content {
@@ -60,18 +59,87 @@
             padding: 20px;
             box-sizing: border-box;
         }
+
+        #timetable {
+            max-width: 95%;
+            max-height: 70%;
+            overflow-y: auto;
+            margin-right: 70%;
+            position: relative;
+        }
+
+        .timetable-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+
+        .time, .activity, .room, .break {
+            padding: 10px;
+            box-sizing: border-box;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bolder;
+            margin-left: 2%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .time {
+            width: 60px;
+            height: 60px;
+            background-color: #1C1C1C;
+            border-right: 2px solid #1C1C1C;
+        }
+
+        .activity, .break {
+            flex-grow: 1;
+            background-color: #242424;
+            height: 60px;
+        }
+
+        .room {
+            width: 60px;
+            height: 60px;
+            background-color: #1C1C1C;
+            border-left: 2px solid #1C1C1C;
+        }
+
+        .break {
+            border-radius: 8px 0 0 8px;
+            background-color: #242424;
+            position: absolute;
+            top: 0;
+            left: 70px; /* Adjusted left position */
+            width: calc(100% - 63px); /* Adjusted width */
+        }
+
+        .break .break-text {
+            margin-right: 20%; /* Move the break text closer to the left */
+        }
     </style>
 </head>
 <body>
     <div id="day-week-display"></div>
     <div id="welcome-message">Welcome Harry</div>
     <div id="embed">
-        <iframe id="embed-frame" src="https://hvgs.github.io/tt/embed.html" title="Embedded Content"></iframe>
+        <div id="embed-content">
+            <!-- Embed content goes here -->
+            <div style="display: none;" id="day-week-display"></div>
+            <div id="timetable"></div>
+        </div>
     </div>
     <div id="content">
         <!-- Your additional content goes here -->
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
         // Check for the "itsame" cookie and redirect if not present
         function checkCookie() {
@@ -95,14 +163,80 @@
             return Math.ceil((((this - firstJan) / 86400000) + firstJan.getDay() + 1) / 7);
         };
 
-        // Display the current day and week
-        function displayDayWeek() {
+        // Function to get the timetable for the current day
+        function getTimetable() {
             const today = new Date();
+
+            // Check if it's past 3 PM or the weekend, and adjust the date accordingly
+            if (today.getHours() >= 15 || today.getDay() === 0 || today.getDay() === 6) {
+                today.setDate(today.getDate() + 1);
+            }
+
             const week = getWeek(today);
             const dayOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][today.getDay()];
 
+            // Display the current day and week
             const dayWeekDisplay = document.getElementById('day-week-display');
             dayWeekDisplay.textContent = `${dayOfWeek}, ${week}`;
+
+            fetch('harry.yaml')
+                .then(response => response.text())
+                .then(data => {
+                    const timetable = jsyaml.load(data);
+                    const dayTimetable = timetable[week][dayOfWeek];
+
+                    const timetableContainer = document.getElementById('timetable');
+                    timetableContainer.innerHTML = '';
+
+                    for (const period in dayTimetable) {
+                        const { Class, Room, Time } = dayTimetable[period];
+
+                        if (period === 'Lunch' || period === 'Recess') {
+                            const item = document.createElement('div');
+                            item.classList.add('timetable-item');
+
+                            const timeDiv = document.createElement('div');
+                            timeDiv.classList.add('time');
+                            timeDiv.textContent = Time;
+
+                            const activityDiv = document.createElement('div');
+                            activityDiv.classList.add('break'); // Use .break class for Lunch/Recess
+                            activityDiv.innerHTML = `<span class="break-text">${period}</span>`; // Use the period name (Lunch/Recess) as the activity
+
+                            const roomDiv = document.createElement('div');
+                            roomDiv.classList.add('room');
+                            roomDiv.textContent = ''; // No need to display room for Lunch/Recess
+
+                            item.appendChild(timeDiv);
+                            item.appendChild(activityDiv);
+                            item.appendChild(roomDiv);
+
+                            timetableContainer.appendChild(item);
+                        } else {
+                            const item = document.createElement('div');
+                            item.classList.add('timetable-item');
+
+                            const timeDiv = document.createElement('div');
+                            timeDiv.classList.add('time');
+                            timeDiv.textContent = Time;
+
+                            const activityDiv = document.createElement('div');
+                            activityDiv.classList.add('activity');
+                            activityDiv.textContent = Class;
+
+                            const roomDiv = document.createElement('div');
+                            roomDiv.classList.add('room');
+                            roomDiv.textContent = Room;
+
+                            item.appendChild(timeDiv);
+                            item.appendChild(activityDiv);
+                            item.appendChild(roomDiv);
+
+                            timetableContainer.appendChild(item);
+                        }
+                    }
+                })
+                .catch(error => console.log('Error fetching timetable:', error));
         }
 
         // Function to remove the "itsame" cookie
@@ -111,10 +245,9 @@
             window.location.href = 'index.html'; // Redirect after removing cookie
         }
 
-        // Function to refresh the embedded iframe
+        // Function to refresh the embedded content
         function refreshEmbeds() {
-            const iframe = document.getElementById('embed-frame');
-            iframe.src = iframe.src; // Refresh the iframe by resetting its src
+            getTimetable(); // Refresh the timetable
         }
 
         // Listen for keydown event
@@ -127,7 +260,7 @@
 
         // Initialize display and check cookie
         checkCookie();
-        displayDayWeek();
+        getTimetable();
 
         // Make refreshEmbeds() and removeCookie() available globally
         window.refreshEmbeds = refreshEmbeds;
