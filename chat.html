@@ -125,7 +125,8 @@
             alert("Invalid action. Please refresh and try again.");
           }
         } else {
-          checkAccess();
+          // Show chat container and load messages
+          document.getElementById('chatContainer').style.display = 'flex';
           displayMessages();
         }
       }
@@ -146,7 +147,7 @@
                     alert("Error signing up. Please try again.");
                   } else {
                     setUserCookie(newUserUUID);
-                    checkAccess();
+                    document.getElementById('chatContainer').style.display = 'flex';
                     displayMessages();
                   }
                 });
@@ -173,7 +174,7 @@
                 var userUUID = Object.keys(userData)[0];
                 if (userData[userUUID].password === password) {
                   setUserCookie(userUUID);
-                  checkAccess();
+                  document.getElementById('chatContainer').style.display = 'flex';
                   displayMessages();
                 } else {
                   alert("Incorrect password. Please try again.");
@@ -280,13 +281,13 @@
         }
       }
 
-      // Prompt for login or signup on page load
+      // Initial check for user login status and display chat container if logged in
       promptForLoginOrSignup();
 
       // Add event listener for Enter key to send messages
       document.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
-          event.preventDefault(); // Prevent default Enter key behavior
+          event.preventDefault();
           sendMessage();
         }
       });
