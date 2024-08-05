@@ -3,159 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NUH UH</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            text-align: center;
-        }
-        .input-box {
-            display: inline-block;
-            border: 2px solid gray;
-            border-radius: 25px;
-            background-color: #1e1e1e;
-            margin-bottom: 20px;
-        }
-        .input-box input {
-            border: none;
-            outline: none;
-            padding: 10px 20px;
-            color: #e0e0e0;
-            background-color: transparent;
-            font-size: 16px;
-        }
-        .button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 25px;
-            background-color: #444;
-            color: #e0e0e0;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+    <title>Visit Tracking</title>
 </head>
 <body>
-    <div class="container">
-        <div class="input-box">
-            <input type="password" id="passwordInput" placeholder="Enter password" autofocus>
-        </div>
-        <button class="button" onclick="submitPassword()">Submit</button>
-    </div>
     <script>
-        const masterPassword = 'lrip';
-
-        function generateDailyPassword() {
-            const today = new Date().toDateString();
-            let tempPassword = getCookie(today);
-            if (!tempPassword) {
-                tempPassword = generateRandomPasswordFromSeed(today, 5);
-                setCookie(today, tempPassword, 1);
+        (function() {
+            function setCookie(name, value, days) {
+                const d = new Date();
+                d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+                const expires = "expires=" + d.toUTCString();
+                document.cookie = name + "=" + value + ";" + expires + ";path=/";
             }
-            return tempPassword;
-        }
 
-        function generateRandomPasswordFromSeed(seed, length) {
-            const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let password = '';
-            let seedNum = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-            for (let i = 0; i < length; i++) {
-                password += characters.charAt((seedNum + i) % characters.length);
-                seedNum = (seedNum * (i + 1)) % 1000000;
+            function getCookie(name) {
+                const decodedCookie = decodeURIComponent(document.cookie);
+                const ca = decodedCookie.split(';');
+                const cookieName = name + "=";
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i].trim();
+                    if (c.indexOf(cookieName) === 0) {
+                        return c.substring(cookieName.length, c.length);
+                    }
+                }
+                return "";
             }
-            return password;
-        }
 
-        function setCookie(name, value, days) {
-            const d = new Date();
-            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-            const expires = "expires=" + d.toUTCString();
-            document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        }
+            function getDeviceInfo() {
+                return {
+                    deviceName: navigator.platform,
+                    deviceType: navigator.userAgent
+                };
+            }
 
-        function getCookie(name) {
-            const decodedCookie = decodeURIComponent(document.cookie);
-            const ca = decodedCookie.split(';');
-            const cookieName = name + "=";
-            for (let i = 0; i < ca.length; i++) {
-                let c = ca[i].trim();
-                if (c.indexOf(cookieName) === 0) {
-                    return c.substring(cookieName.length, c.length);
+            function trackVisit() {
+                const today = new Date().toISOString().split('T')[0];
+                const cookieName = 'visitCounter_' + today;
+                let visits = parseInt(getCookie(cookieName)) || 0;
+                visits++;
+                setCookie(cookieName, visits, 1);
+
+                const { deviceName, deviceType } = getDeviceInfo();
+                let visitData = JSON.parse(getCookie('visitData') || '{}');
+                if (!visitData[today]) {
+                    visitData[today] = [];
+                }
+                visitData[today].push({ deviceName, deviceType });
+                setCookie('visitData', JSON.stringify(visitData), 7);
+            }
+
+            function viewVisits() {
+                try {
+                    const visitData = JSON.parse(getCookie('visitData') || '{}');
+                    const blob = new Blob([JSON.stringify(visitData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'visitData.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (e) {
+                    console.error('Error parsing visit data:', e);
                 }
             }
-            return "";
-        }
 
-        function getDeviceInfo() {
-            return {
-                deviceName: navigator.platform,
-                deviceType: navigator.userAgent
-            };
-        }
-
-        function trackVisit() {
-            const today = new Date().toISOString().split('T')[0];
-            const cookieName = 'visitCounter_' + today;
-            let visits = parseInt(getCookie(cookieName)) || 0;
-            visits++;
-            setCookie(cookieName, visits, 1);  // Cookie expires in 1 day
-
-            const { deviceName, deviceType } = getDeviceInfo();
-            let visitData = JSON.parse(getCookie('visitData') || '{}');
-            if (!visitData[today]) {
-                visitData[today] = [];
-            }
-            visitData[today].push({ deviceName, deviceType });
-            setCookie('visitData', JSON.stringify(visitData), 7);  // Cookie expires in 7 days
-        }
-
-        function viewVisits() {
-            try {
-                const visitData = JSON.parse(getCookie('visitData') || '{}');
-                const blob = new Blob([JSON.stringify(visitData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'visitData.json';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            } catch (e) {
-                console.error('Error parsing visit data:', e);
-            }
-        }
-
-        function submitPassword() {
-            const enteredPassword = document.getElementById('passwordInput').value.trim().toLowerCase();
-            const tempPassword = generateDailyPassword();
-
-            if (enteredPassword === masterPassword || enteredPassword === tempPassword.toLowerCase()) {
-                window.location.href = 'welcome.html';
-            } else {
-                alert('Incorrect password');
-            }
-        }
-
-        // Track visit on page load
-        window.onload = trackVisit;
-
-        // Expose functions to the console
-        window.showPasswords = function() {
-            console.log('Master Password:', masterPassword);
-            console.log('Temporary Password:', generateDailyPassword());
-        };
-
-        window.viewVisits = viewVisits;
+            window.onload = trackVisit;
+            window.viewVisits = viewVisits;
+        })();
     </script>
 </body>
 </html>
