@@ -30,7 +30,7 @@
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
-      text-align: left; /* Ensures text alignment is left */
+      text-align: left;
     }
     .message.default {
       background-color: #e0e0e0;
@@ -40,6 +40,9 @@
     }
     .message.Idiots {
       background-color: #e2a8e2;
+    }
+    .message.self {
+      background-color: #cce5ff; /* Blue color for own messages */
     }
     .input-container {
       display: flex;
@@ -67,7 +70,7 @@
     .input-container .secret-button {
       background-color: #f8d7da;
       color: #721c24;
-      margin-left: 10px; /* Ensure spacing between input field and button */
+      margin-left: 10px;
     }
     .input-container .secret-button:hover {
       background-color: #f5c6cb;
@@ -91,7 +94,7 @@
       firebase.initializeApp(firebaseConfig);
       var database = firebase.database();
       var messagesRef = database.ref('messages');
-      var usersRef = database.ref('users'); // To manage user roles and names
+      var usersRef = database.ref('users');
 
       function getUserUUID() {
         var uuid = "";
@@ -106,41 +109,95 @@
         return uuid;
       }
 
-      function promptForUserName() {
-        var userName = prompt("Enter your name:");
-        if (userName) {
-          checkUserName(userName, function(exists) {
-            if (exists) {
-              alert("Name taken, please choose another.");
-              promptForUserName(); // Prompt again if name is taken
-            } else {
-              var userUUID = generateUUID();
-              document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
-                if (error) {
-                  alert("Error setting user name.");
-                } else {
-                  document.getElementById('chatContainer').style.display = 'flex';
-                  displayMessages();
-                }
-              });
-            }
-          });
+      function setUserCookie(uuid) {
+        document.cookie = "userUUID=" + uuid + "; path=/";
+      }
+
+      function promptForLoginOrSignup() {
+        var uuid = getUserUUID();
+        if (!uuid) {
+          var action = prompt("Enter 'login' to log in or 'signup' to sign up:");
+          if (action === 'signup') {
+            signup();
+          } else if (action === 'login') {
+            login();
+          } else {
+            alert("Invalid action. Please refresh and try again.");
+          }
+        } else {
+          checkAccess();
+          displayMessages();
         }
       }
 
-      function checkUserName(userName, callback) {
-        usersRef.orderByChild('name').equalTo(userName).once('value', function(snapshot) {
-          callback(snapshot.exists());
-        });
+      function signup() {
+        var name = prompt("Enter your desired username:");
+        if (name) {
+          checkUserName(name, function(exists) {
+            if (exists) {
+              alert("Name taken, please choose another.");
+              signup();
+            } else {
+              var password = prompt("Enter your desired password:");
+              if (password) {
+                var newUserUUID = firebase.database().ref().child('users').push().key;
+                usersRef.child(newUserUUID).set({ name: name, password: password, role: 'default' }, function(error) {
+                  if (error) {
+                    alert("Error signing up. Please try again.");
+                  } else {
+                    setUserCookie(newUserUUID);
+                    checkAccess();
+                    displayMessages();
+                  }
+                });
+              } else {
+                alert("Password cannot be empty.");
+                signup();
+              }
+            }
+          });
+        } else {
+          alert("Username cannot be empty.");
+          signup();
+        }
       }
 
-      function generateUUID() {
-        // Simple UUID generator function
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
+      function login() {
+        var name = prompt("Enter your username:");
+        if (name) {
+          var password = prompt("Enter your password:");
+          if (password) {
+            usersRef.orderByChild('name').equalTo(name).once('value', function(snapshot) {
+              if (snapshot.exists()) {
+                var userData = snapshot.val();
+                var userUUID = Object.keys(userData)[0];
+                if (userData[userUUID].password === password) {
+                  setUserCookie(userUUID);
+                  checkAccess();
+                  displayMessages();
+                } else {
+                  alert("Incorrect password. Please try again.");
+                  login();
+                }
+              } else {
+                alert("Username not found. Please sign up.");
+                signup();
+              }
+            });
+          } else {
+            alert("Password cannot be empty.");
+            login();
+          }
+        } else {
+          alert("Username cannot be empty.");
+          login();
+        }
+      }
+
+      function checkAccess() {
+        if (!document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
+          window.location.href = 'chat.html';
+        }
       }
 
       function sendMessage() {
@@ -159,6 +216,7 @@
 
       function displayMessages() {
         var messagesDiv = document.getElementById('messages');
+        var userUUID = getUserUUID();
         messagesDiv.innerHTML = '';
         messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
           var messageData = snapshot.val();
@@ -168,7 +226,11 @@
             var userRole = userData ? userData.role : 'default';
             var messageElement = document.createElement('div');
             messageElement.textContent = userName + ": " + messageData.message;
-            messageElement.className = 'message ' + userRole;
+            if (messageData.uuid === userUUID) {
+              messageElement.className = 'message self';
+            } else {
+              messageElement.className = 'message ' + userRole;
+            }
             messagesDiv.appendChild(messageElement);
           });
         });
@@ -218,18 +280,13 @@
         }
       }
 
-      // Prompt for user name on page load if not set
-      if (getUserUUID()) {
-        document.getElementById('chatContainer').style.display = 'flex';
-        displayMessages();
-      } else {
-        promptForUserName();
-      }
+      // Prompt for login or signup on page load
+      promptForLoginOrSignup();
 
       // Add event listener for Enter key to send messages
       document.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
-          event.preventDefault(); // Prevent default Enter key behavior (e.g., form submission)
+          event.preventDefault(); // Prevent default Enter key behavior
           sendMessage();
         }
       });
