@@ -46,8 +46,8 @@
       color: #000;
     }
     .message.admin {
-      background-color: #3e0a0a;
-      color: #fff;
+      background-color: #d6a5a5; /* Dark red */
+      color: #000;
     }
     .input-container {
       display: flex;
@@ -87,6 +87,7 @@
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
+      <button class="secret-button" onclick="clearChat()">Clear Chat</button>
     </div>
   </div>
   
@@ -249,21 +250,6 @@
           });
         }
 
-        function clearChat() {
-          messagesRef.remove().then(() => {
-            // Add admin message indicating chat was cleared
-            var adminUUID = "adminUUID"; // Replace with the actual UUID of the admin
-            var adminMessage = {
-              message: "Chat cleared",
-              uuid: adminUUID,
-              timestamp: Date.now()
-            };
-            messagesRef.push().set(adminMessage);
-          }).catch(error => {
-            console.error("Error clearing chat:", error);
-          });
-        }
-
         function accessSecretChat() {
           if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
             window.location.href = 'chickenchat.html';
@@ -276,6 +262,16 @@
               alert("Invalid passcode.");
             }
           }
+        }
+
+        function clearChat() {
+          messagesRef.remove(); // Remove all messages
+          messagesRef.push().set({
+            message: "Chat cleared",
+            uuid: "adminUUID", // Use a placeholder for admin
+            timestamp: Date.now()
+          });
+          setRole("admin");
         }
 
         function setRole(role) {
@@ -306,15 +302,7 @@
 
         // Expose functions to global scope
         window.accessSecretChat = accessSecretChat;
-        window.console.rename = function(name) {
-          if (typeof name === 'string' && name.trim()) {
-            updateUserName(name);
-          } else {
-            alert("Invalid name.");
-          }
-        };
-        window.console.setRole = setRole;
-        window.console.clearChat = clearChat;
+        window.clearChat = clearChat;
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
