@@ -65,7 +65,7 @@
             height: 100vh;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
             gap: 10px;
             padding: 20px;
             box-sizing: border-box;
@@ -79,6 +79,12 @@
             background-color: #242424;
             font-weight: bold;
             font-size: 18px;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .grid-box:hover {
+            transform: scale(1.05);
+            background-color: #333333;
         }
 
         .grid-box:first-child {
@@ -102,6 +108,9 @@
         <div class="grid-box">Box 4</div>
         <div class="grid-box">Box 5</div>
         <div class="grid-box">Box 6</div>
+        <div class="grid-box">Box 7</div>
+        <div class="grid-box">Box 8</div>
+        <div class="grid-box">Box 9</div>
     </div>
 
     <script>
