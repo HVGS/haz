@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embed with Cookies</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 100%;
+            height: 100%;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <iframe id="embeddedPage" src=""></iframe>
+    </div>
+
+    <script>
+        function setCookiesAndEmbed() {
+            document.cookie = 'intercom-device-id-pmfw4guo=39932658-d45b-454b-8c80-c63d1d5307eb; path=/';
+            document.cookie = 'cookie_consent_user_consent_token=vif9TK3kSLzT; path=/';
+            document.cookie = 'cookie_consent_user_accepted=true; path=/';
+            document.cookie = 'cookie_consent_level={"strictly-necessary":true,"functionality":true,"tracking":true,"targeting":true}; path=/';
+            document.cookie = '_gcl_au=1.1.445529685.1718928672; path=/';
+            document.cookie = '_ga=GA1.1.1379663126.1718928672; path=/';
+            document.cookie = 'hubspotutk=047f033832f472ff1fc733ac2324154c; path=/';
+            document.cookie = '__hssrc=1; path=/';
+            document.cookie = 'prism_650445645=ae45a1bf-adda-44c8-80c1-f78727bd8d9a; path=/';
+            document.cookie = '__hstc=109199642.047f033832f472ff1fc733ac2324154c.1718928672058.1719368123064.1722381568275.6; path=/';
+            document.cookie = '_ga_EPJBGDH3CR=GS1.1.1722569114.8.0.1722569114.60.0.0; path=/';
+            document.cookie = '_clck=txb4ul|2|fnz|0|1633; path=/';
+
+            document.getElementById('embeddedPage').src = 'https://web.toddleapp.com/platform/6048/courses';
+        }
+
+        setCookiesAndEmbed();
+    </script>
+</body>
+</html>
