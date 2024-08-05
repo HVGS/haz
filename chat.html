@@ -299,6 +299,7 @@
           // Listen for clearChatFlag changes
           clearChatRef.on('value', function(snapshot) {
             if (snapshot.val() === true) {
+              clearChatRef.set(false); // Reset the flag
               location.reload(); // Refresh the page for all users
             }
           });
@@ -319,14 +320,14 @@
         }
 
         function clearChat() {
-          clearChatRef.set(true); // Set the flag to true to notify all users
-          messagesRef.remove(); // Remove all messages
-          messagesRef.push().set({
-            message: "Chat cleared",
-            uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f", // Admin UUID
-            timestamp: Date.now()
-          }).then(function() {
-            clearChatRef.set(false); // Reset the flag after clearing the chat
+          messagesRef.remove().then(function() {
+            messagesRef.push().set({
+              message: "Chat cleared",
+              uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f", // Admin UUID
+              timestamp: Date.now()
+            }).then(function() {
+              clearChatRef.set(true); // Set the flag to true to notify all users
+            });
           });
         }
 
