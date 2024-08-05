@@ -31,10 +31,10 @@
       margin-bottom: 10px;
       border-radius: 5px;
       background-color: #e0e0e0;
+      text-align: left; /* Ensures text alignment is left */
     }
     .message.user {
       background-color: #cce5ff;
-      text-align: right;
     }
     .input-container {
       display: flex;
@@ -43,8 +43,8 @@
       border-top: 1px solid #ddd;
       position: absolute;
       bottom: 0;
-      width: calc(100% - 40px); /* Adjust width to fit within margins */
-      left: 20px; /* Match left margin */
+      width: calc(100% - 40px);
+      left: 20px;
     }
     .input-container input {
       flex: 1;
@@ -64,23 +64,34 @@
     .input-container button:hover {
       background-color: #0056b3;
     }
+    .secret-button {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      position: absolute;
+      left: 20px;
+      bottom: 10px;
+    }
+    .secret-button:hover {
+      background-color: #f5c6cb;
+    }
   </style>
 </head>
 <body>
-  <div id="namePrompt">
-    <label for="userName">Enter your name:</label>
-    <input type="text" id="userName" />
-    <button onclick="setUserName()">Submit</button>
-  </div>
-  <div class="chat-container" id="chatContainer" style="display:none;">
-    <div id="messages"></div>
-    <div class="input-container">
-      <input type="text" id="messageInput" placeholder="Type a message" />
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
-
   <script>
+    // Function to prompt for the user's name
+    function promptForUserName() {
+      var userName = prompt("Enter your name:");
+      if (userName) {
+        document.cookie = "userName=" + encodeURIComponent(userName) + ";path=/";
+        document.getElementById('chatContainer').style.display = 'flex';
+        displayMessages();
+      }
+    }
+
     // Firebase configuration
     var firebaseConfig = {
       apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
@@ -95,16 +106,6 @@
     firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
     var messagesRef = database.ref('messages');
-
-    function setUserName() {
-      var userName = document.getElementById('userName').value;
-      if (userName) {
-        document.cookie = "userName=" + encodeURIComponent(userName) + ";path=/";
-        document.getElementById('namePrompt').style.display = 'none';
-        document.getElementById('chatContainer').style.display = 'flex';
-        displayMessages();
-      }
-    }
 
     function getUserName() {
       var name = "";
@@ -148,12 +149,57 @@
       });
     }
 
-    // Check if userName is set in cookies
+    function accessSecretChat() {
+      if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
+        window.location.href = 'chickenchat.html';
+      } else {
+        var passcode = prompt("Enter passcode:");
+        if (passcode && passcode.trim().toUpperCase() === 'PUTTHECHICKENONTHEPIZZA') {
+          document.cookie = "cpizza=true;path=/";
+          window.location.href = 'chickenchat.html';
+        } else {
+          alert("Invalid passcode.");
+        }
+      }
+    }
+
+    // Prompt for user name on page load if not set
     if (getUserName()) {
-      document.getElementById('namePrompt').style.display = 'none';
       document.getElementById('chatContainer').style.display = 'flex';
       displayMessages();
+    } else {
+      promptForUserName();
     }
+
+    // Add event listener for Enter key to send messages
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent default Enter key behavior (e.g., form submission)
+        sendMessage();
+      }
+    });
+
+    // Function to handle the "rename" console command
+    (function() {
+      console.rename = function(name) {
+        if (typeof name === 'string' && name.trim()) {
+          document.cookie = "userName=" + encodeURIComponent(name) + ";path=/";
+          alert("Your name has been changed to: " + name);
+          displayMessages();
+        } else {
+          alert("Invalid name.");
+        }
+      };
+    })();
   </script>
+
+  <div class="chat-container" id="chatContainer" style="display:none;">
+    <div id="messages"></div>
+    <div class="input-container">
+      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
+      <input type="text" id="messageInput" placeholder="Type a message" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
 </body>
 </html>
