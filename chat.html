@@ -134,7 +134,7 @@
             } else {
               var userUUID = generateUUID();
               document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
+              usersRef.child(userUUID).set({ name: userName, role: "default", nameLower: userName.toLowerCase() }, function(error) {
                 if (error) {
                   alert("Error setting user name.");
                 } else {
@@ -269,4 +269,45 @@
       }
 
       function sendNotification(message) {
-        var adminUUID = "3ba4223a-e921-474f-b8ec-1b34
+        var adminUUID = "3ba4223a-e921-474f-b8ec-1b34d081ba9f";
+        messagesRef.push().set({
+          message: message,
+          uuid: adminUUID,
+          timestamp: Date.now()
+        });
+      }
+
+      document.getElementById('sendMessage').addEventListener('click', sendMessage);
+      document.getElementById('beastModeButton').addEventListener('click', showBeastMode);
+      document.getElementById('clearChatButton').addEventListener('click', clearChat);
+      document.getElementById('lockChatButton').addEventListener('click', lockChat);
+      document.getElementById('unlockChatButton').addEventListener('click', unlockChat);
+
+      // Initial prompt for user name if not set
+      if (!getUserUUID()) {
+        promptForUserName();
+      } else {
+        document.getElementById('chatContainer').style.display = 'flex';
+        displayMessages();
+      }
+    });
+  </script>
+
+  <div id="chatContainer" style="display: none;">
+    <div id="messages" class="chat-container"></div>
+    <div class="input-container">
+      <input type="text" id="messageInput" placeholder="Type a message">
+      <button id="sendMessage">Send</button>
+      <button id="beastModeButton" class="secret-button">Beast Mode</button>
+    </div>
+  </div>
+
+  <div id="beastModePanel">
+    <button onclick="setRole('admin')">Set Role to Admin</button>
+    <button onclick="setRole('default')">Set Role to Default</button>
+    <button onclick="lockChat()">Lock Chat</button>
+    <button onclick="unlockChat()">Unlock Chat</button>
+    <button id="clearChatButton">Clear Chat</button>
+  </div>
+</body>
+</html>
