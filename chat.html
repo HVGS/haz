@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>Chat Forum</title>
-  <link id="favicon" rel="icon" href="favicon.ico" type="image/x-icon">
+  <!-- Import Firebase libraries from CDN -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <style>
@@ -22,7 +22,7 @@
       background-color: #ffffff;
       border: 1px solid #ddd;
       border-radius: 5px;
-      overflow: auto;
+      overflow-y: auto;
       margin: 20px;
       position: relative;
     }
@@ -41,6 +41,14 @@
     .message.Idiots {
       background-color: #e2a8e2;
     }
+    .message.self {
+      background-color: #cce5ff;
+      color: #000;
+    }
+    .message.admin {
+      background-color: #d6a5a5;
+      color: #000;
+    }
     .input-container {
       display: flex;
       padding: 10px;
@@ -56,7 +64,6 @@
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
-      margin-right: 10px;
     }
     .input-container button {
       padding: 10px 20px;
@@ -72,274 +79,308 @@
     .input-container .secret-button:hover {
       background-color: #f5c6cb;
     }
-    #beastModePanel {
+    .popup {
       display: none;
       position: fixed;
-      top: 20px;
-      right: 20px;
-      background: white;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff;
       border: 1px solid #ddd;
-      padding: 10px;
       border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      padding: 20px;
       z-index: 1000;
     }
-    #beastModePanel button {
+    .popup button {
       display: block;
-      margin: 5px 0;
-    }
-    #beastModePanel .close-button {
-      background-color: #dc3545;
-      color: white;
+      margin: 10px auto;
+      padding: 10px 20px;
       border: none;
-      padding: 5px 10px;
+      border-radius: 5px;
       cursor: pointer;
     }
-    #beastModePanel .close-button:hover {
-      background-color: #c82333;
+    .popup button.ChickenMan {
+      background-color: #f8d7da;
+    }
+    .popup button.Idiots {
+      background-color: #e2a8e2;
+    }
+    .popup button.default {
+      background-color: #e0e0e0;
+    }
+    .popup button.clear-chat {
+      background-color: #d6a5a5;
+      color: #000;
     }
   </style>
 </head>
 <body>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var firebaseConfig = {
-        apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
-        authDomain: "chat-71251.firebaseapp.com",
-        databaseURL: "https://chat-71251-default-rtdb.firebaseio.com",
-        projectId: "chat-71251",
-        storageBucket: "chat-71251.appspot.com",
-        messagingSenderId: "290327153997"
-      };
-      firebase.initializeApp(firebaseConfig);
-      var database = firebase.database();
-      var messagesRef = database.ref('messages');
-      var usersRef = database.ref('users');
-
-      function getUserUUID() {
-        var uuid = "";
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-          var cookie = cookies[i].trim();
-          if (cookie.startsWith("userUUID=")) {
-            uuid = cookie.substring("userUUID=".length);
-            break;
-          }
-        }
-        return uuid;
-      }
-
-      function promptForUserName() {
-        var userName = prompt("Enter your name:");
-        if (userName) {
-          checkUserName(userName.toLowerCase(), function(exists) {
-            if (exists) {
-              alert("Name taken, please choose another.");
-              promptForUserName();
-            } else {
-              var userUUID = generateUUID();
-              document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
-                if (error) {
-                  alert("Error setting user name.");
-                } else {
-                  document.getElementById('chatContainer').style.display = 'flex';
-                  displayMessages();
-                }
-              });
-            }
-          });
-        }
-      }
-
-      function checkUserName(userName, callback) {
-        usersRef.orderByChild('nameLower').equalTo(userName).once('value', function(snapshot) {
-          callback(snapshot.exists());
-        });
-      }
-
-      function generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      }
-
-      function sendMessage() {
-        var messageInput = document.getElementById('messageInput');
-        var message = messageInput.value;
-        var userUUID = getUserUUID();
-        if (message && userUUID) {
-          messagesRef.push().set({
-            message: message,
-            uuid: userUUID,
-            timestamp: Date.now()
-          });
-          messageInput.value = '';
-        }
-      }
-
-      function displayMessages() {
-        var messagesDiv = document.getElementById('messages');
-        messagesDiv.innerHTML = '';
-        messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
-          var messageData = snapshot.val();
-          usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
-            var userData = userSnapshot.val();
-            var userName = userData ? userData.name : 'Unknown';
-            var userRole = userData ? userData.role : 'default';
-            var messageElement = document.createElement('div');
-            messageElement.textContent = userName + ": " + messageData.message;
-            messageElement.className = 'message ' + userRole;
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
-          });
-        });
-      }
-
-      function accessSecretChat() {
-        if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
-          window.location.href = 'chickenchat.html';
-        } else {
-          var passcode = prompt("Enter passcode:");
-          if (passcode && passcode.trim().toUpperCase() === 'PUTTHECHICKENONTHEPIZZA') {
-            document.cookie = "cpizza=true;path=/";
-            window.location.href = 'chickenchat.html';
-          } else {
-            alert("Invalid passcode.");
-          }
-        }
-      }
-
-      function setRole(role) {
-        var userUUID = getUserUUID();
-        if (userUUID) {
-          usersRef.child(userUUID).update({ role: role }, function(error) {
-            if (error) {
-              alert("Error updating role.");
-            } else {
-              alert("Role updated to: " + role);
-            }
-          });
-        } else {
-          alert("User not found.");
-        }
-      }
-
-      function updateUserName(newName) {
-        var userUUID = getUserUUID();
-        if (userUUID && newName) {
-          usersRef.child(userUUID).update({ name: newName }, function(error) {
-            if (error) {
-              alert("Error updating user name.");
-            } else {
-              alert("User name updated to: " + newName);
-            }
-          });
-        } else {
-          alert("Error updating user name.");
-        }
-      }
-
-      function showBeastMode() {
-        var beastModePanel = document.getElementById('beastModePanel');
-        beastModePanel.style.display = 'block';
-      }
-
-      function hideBeastMode() {
-        var beastModePanel = document.getElementById('beastModePanel');
-        beastModePanel.style.display = 'none';
-      }
-
-      function clearChat() {
-        messagesRef.remove().then(function() {
-          messagesRef.push().set({
-            message: 'CHAT CLEARED',
-            uuid: '2F3ba4223a-e921-474f-b8ec-1b34d081ba9f',
-            timestamp: Date.now()
-          });
-        });
-      }
-
-      // Prompt for user name on page load if not set
-      if (getUserUUID()) {
-        document.getElementById('chatContainer').style.display = 'flex';
-        displayMessages();
-      } else {
-        promptForUserName();
-      }
-
-      document.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          sendMessage();
-        }
-      });
-
-      window.console.rename = function(name) {
-        if (typeof name === 'string' && name.trim()) {
-          updateUserName(name);
-        } else {
-          alert("Invalid name.");
-        }
-      };
-
-      window.console.setRole = setRole;
-      window.console.showBeastMode = showBeastMode;
-      window.console.clearChat = clearChat;
-
-      // Check for unread messages (example logic)
-      function checkForUnreadMessages() {
-        var hasUnreadMessages = false; // Replace with actual unread message logic
-        updateFavicon(hasUnreadMessages);
-      }
-
-      function createFaviconWithDot() {
-        var canvas = document.createElement('canvas');
-        var size = 32;
-        canvas.width = size;
-        canvas.height = size;
-        var ctx = canvas.getContext('2d');
-
-        ctx.clearRect(0, 0, size, size); // Transparent background
-
-        ctx.beginPath();
-        ctx.arc(size - 8, 8, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = 'red';
-        ctx.fill();
-
-        return canvas.toDataURL('image/x-icon');
-      }
-
-      function updateFavicon(hasUnreadMessages) {
-        var favicon = document.getElementById('favicon');
-        if (hasUnreadMessages) {
-          favicon.href = createFaviconWithDot();
-        } else {
-          favicon.href = 'favicon.ico';
-        }
-      }
-
-      setInterval(checkForUnreadMessages, 10000);
-
-    });
-  </script>
-</head>
-<body>
-  <div class="chat-container" id="chatContainer" style="display:none;">
+  <div id="chatContainer" class="chat-container" style="display:none;">
     <div id="messages"></div>
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
     </div>
   </div>
-
-  <div id="beastModePanel">
-    <button class="close-button" onclick="hideBeastMode()">Close</button>
-    <button onclick="setRole('ChickenMan')">ChickenMan</button>
-    <button onclick="setRole('Idiots')">Idiots</button>
-    <button onclick="setRole('default')">Default</button>
-    <button onclick="clearChat()">Clear Chat</button>
+  
+  <div id="beastmodePopup" class="popup">
+    <button class="ChickenMan" onclick="setRole('ChickenMan')">ChickenMan</button>
+    <button class="Idiots" onclick="setRole('Idiots')">Idiots</button>
+    <button class="default" onclick="setRole('default')">Default</button>
+    <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        // Firebase configuration
+        var firebaseConfig = {
+          apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
+          authDomain: "chat-71251.firebaseapp.com",
+          databaseURL: "https://chat-71251-default-rtdb.firebaseio.com",
+          projectId: "chat-71251",
+          storageBucket: "chat-71251.appspot.com",
+          messagingSenderId: "290327153997"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+        var messagesRef = database.ref('messages');
+        var usersRef = database.ref('users'); // To manage user roles and names
+
+        function getUserUUID() {
+          var uuid = "";
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.startsWith("userUUID=")) {
+              uuid = cookie.substring("userUUID=".length);
+              break;
+            }
+          }
+          return uuid;
+        }
+
+        function promptForLoginOrSignup() {
+          var uuid = getUserUUID();
+          if (uuid) {
+            document.getElementById('chatContainer').style.display = 'flex';
+            displayMessages();
+          } else {
+            var action = prompt("Login or Signup? (Type 'login' or 'signup')");
+            if (action === 'signup') {
+              promptForUserName(true); // True indicates signup
+            } else if (action === 'login') {
+              promptForUserName(false); // False indicates login
+            } else {
+              alert("Invalid choice.");
+            }
+          }
+        }
+
+        function promptForUserName(isSignup) {
+          var userName = prompt("Enter your name:");
+          if (userName) {
+            userName = userName.trim(); // Keep case-sensitive display name
+            var lowerCaseName = userName.toLowerCase();
+            checkUserName(lowerCaseName, isSignup, function(exists) {
+              if (exists && isSignup) {
+                alert("Name taken, please choose another.");
+                promptForUserName(true); // Prompt again if name is taken
+              } else if (exists && !isSignup) {
+                // Login process
+                promptForPassword(function(password) {
+                  authenticateUser(lowerCaseName, password, function(success) {
+                    if (success) {
+                      document.getElementById('chatContainer').style.display = 'flex';
+                      displayMessages();
+                    } else {
+                      alert("Wrong password, try again.");
+                      promptForUserName(false); // Retry login
+                    }
+                  });
+                });
+              } else {
+                // Signup process
+                var password = prompt("Enter a password:");
+                var userUUID = generateUUID();
+                document.cookie = "userUUID=" + userUUID + ";path=/";
+                usersRef.child(userUUID).set({ name: userName, nameLower: lowerCaseName, role: "default", password: password }, function(error) {
+                  if (error) {
+                    alert("Error creating user.");
+                  } else {
+                    document.getElementById('chatContainer').style.display = 'flex';
+                    displayMessages();
+                  }
+                });
+              }
+            });
+          }
+        }
+
+        function checkUserName(userName, isSignup, callback) {
+          var query = usersRef.orderByChild('nameLower').equalTo(userName);
+          query.once('value', function(snapshot) {
+            callback(snapshot.exists());
+          });
+        }
+
+        function authenticateUser(userName, password, callback) {
+          var query = usersRef.orderByChild('nameLower').equalTo(userName);
+          query.once('value', function(snapshot) {
+            var exists = false;
+            snapshot.forEach(function(childSnapshot) {
+              var userData = childSnapshot.val();
+              if (userData.password === password) {
+                document.cookie = "userUUID=" + childSnapshot.key + ";path=/";
+                exists = true;
+              }
+            });
+            callback(exists);
+          });
+        }
+
+        function promptForPassword(callback) {
+          var password = prompt("Enter your password:");
+          if (password) {
+            callback(password);
+          } else {
+            alert("Password required.");
+            promptForPassword(callback); // Retry password prompt
+          }
+        }
+
+        function generateUUID() {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        }
+
+        function sendMessage() {
+          var messageInput = document.getElementById('messageInput');
+          var message = messageInput.value;
+          var userUUID = getUserUUID();
+          if (message && userUUID) {
+            messagesRef.push().set({
+              message: message,
+              uuid: userUUID,
+              timestamp: Date.now()
+            });
+            messageInput.value = '';
+          }
+        }
+
+        function displayMessages() {
+          var messagesDiv = document.getElementById('messages');
+          var lastVisibleMessageKey = null;
+          var isInitialLoad = true;
+
+          function loadMessages() {
+            var query = messagesRef.orderByChild('timestamp').limitToLast(20);
+            if (lastVisibleMessageKey) {
+              query = query.endAt(lastVisibleMessageKey);
+            }
+            query.once('value', function(snapshot) {
+              if (snapshot.numChildren() === 0) return;
+              if (isInitialLoad) {
+                isInitialLoad = false;
+                messagesDiv.innerHTML = ''; // Clear initial load
+              }
+              snapshot.forEach(function(childSnapshot) {
+                var messageData = childSnapshot.val();
+                usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
+                  var userData = userSnapshot.val();
+                  var userName = userData ? userData.name : 'Unknown';
+                  var userRole = userData ? userData.role : 'default';
+                  var messageElement = document.createElement('div');
+                  messageElement.textContent = userName + ": " + messageData.message;
+                  messageElement.className = 'message ' + userRole + (messageData.uuid === getUserUUID() ? ' self' : '');
+                  messagesDiv.appendChild(messageElement);
+                  lastVisibleMessageKey = childSnapshot.key; // Track last message key
+                });
+              });
+              messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
+            });
+          }
+
+          // Load initial messages
+          loadMessages();
+
+          // Load more messages when scrolling up
+          messagesDiv.addEventListener('scroll', function() {
+            if (messagesDiv.scrollTop === 0) {
+              loadMessages();
+            }
+          });
+        }
+
+        function accessSecretChat() {
+          if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
+            window.location.href = 'chickenchat.html';
+          } else {
+            var passcode = prompt("Enter passcode:");
+            if (passcode && passcode.trim().toUpperCase() === 'PUTTHECHICKENONTHEPIZZA') {
+              document.cookie = "cpizza=true;path=/";
+              window.location.href = 'chickenchat.html';
+            } else {
+              alert("Invalid passcode.");
+            }
+          }
+        }
+
+        function clearChat() {
+          messagesRef.remove(); // Remove all messages
+          messagesRef.push().set({
+            message: "Chat cleared",
+            uuid: "adminUUID", // Use a placeholder for admin
+            timestamp: Date.now()
+          });
+          setRole("admin");
+        }
+
+        function setRole(role) {
+          var userUUID = getUserUUID();
+          if (userUUID) {
+            usersRef.child(userUUID).update({ role: role }, function(error) {
+              if (error) {
+                alert("Error updating role.");
+              } else {
+                alert("Role updated to: " + role);
+              }
+            });
+          } else {
+            alert("User not found.");
+          }
+        }
+
+        function showBeastmode() {
+          var popup = document.getElementById('beastmodePopup');
+          popup.style.display = 'block';
+        }
+
+        // Initialize chat
+        promptForLoginOrSignup();
+
+        // Add event listener for Enter key to send messages
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            sendMessage();
+          }
+        });
+
+        // Expose functions to global scope
+        window.accessSecretChat = accessSecretChat;
+        window.clearChat = clearChat;
+        window.showBeastmode = showBeastmode;
+      } catch (error) {
+        console.error("Error initializing chat:", error);
+        document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
+      }
+    });
+  </script>
 </body>
 </html>
