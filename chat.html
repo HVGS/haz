@@ -30,7 +30,7 @@
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
-      text-align: left; /* Ensures text alignment is left */
+      text-align: left; /* Align names to the left */
     }
     .message.default {
       background-color: #e0e0e0;
@@ -44,7 +44,6 @@
     .message.self {
       background-color: #cce5ff;
       color: #000;
-      text-align: right;
     }
     .input-container {
       display: flex;
@@ -61,7 +60,6 @@
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
-      margin-right: 10px;
     }
     .input-container button {
       padding: 10px 20px;
@@ -257,7 +255,6 @@
             <div id="messages"></div>
             <div class="input-container">
               <input type="text" id="messageInput" placeholder="Type a message..."/>
-              <button onclick="sendMessage()">Send</button>
               <button class="secret-button" onclick="accessSecretChat()">Secret</button>
             </div>
           </div>
