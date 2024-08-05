@@ -307,6 +307,21 @@
         panel.style.display = 'block';
       }
 
+      function accessSecretChat() {
+        var cpizza = document.cookie.split('; ').find(row => row.startsWith('cpizza='));
+        if (cpizza) {
+          window.location.href = 'chickenchat.html';
+        } else {
+          var passcode = prompt("Enter passcode:");
+          if (passcode === 'PUTTHECHICKENONTHEPIZZA') {
+            document.cookie = 'cpizza=true; path=/';
+            window.location.href = 'chickenchat.html';
+          } else {
+            alert("Incorrect passcode.");
+          }
+        }
+      }
+
       document.getElementById('messageInput').addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
           sendMessage();
@@ -336,7 +351,7 @@
       markMessagesAsRead(); // Mark messages as read on page load
     });
   </script>
-  
+
   <!-- Main chat container -->
   <div id="chatContainer" class="chat-container" style="display: none;">
     <div id="messages"></div>
