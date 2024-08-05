@@ -45,6 +45,10 @@
       background-color: #cce5ff;
       color: #000;
     }
+    .message.admin {
+      background-color: #3e0a0a;
+      color: #fff;
+    }
     .input-container {
       display: flex;
       padding: 10px;
@@ -245,6 +249,21 @@
           });
         }
 
+        function clearChat() {
+          messagesRef.remove().then(() => {
+            // Add admin message indicating chat was cleared
+            var adminUUID = "adminUUID"; // Replace with the actual UUID of the admin
+            var adminMessage = {
+              message: "Chat cleared",
+              uuid: adminUUID,
+              timestamp: Date.now()
+            };
+            messagesRef.push().set(adminMessage);
+          }).catch(error => {
+            console.error("Error clearing chat:", error);
+          });
+        }
+
         function accessSecretChat() {
           if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
             window.location.href = 'chickenchat.html';
@@ -295,7 +314,7 @@
           }
         };
         window.console.setRole = setRole;
-
+        window.console.clearChat = clearChat;
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
