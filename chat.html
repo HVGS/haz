@@ -22,7 +22,7 @@
       background-color: #ffffff;
       border: 1px solid #ddd;
       border-radius: 5px;
-      overflow-y: auto; /* Make the chat container scrollable */
+      overflow: auto;
       margin: 20px;
       position: relative;
     }
@@ -91,9 +91,6 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       padding: 20px;
       z-index: 1000;
-      max-width: 400px; /* Optional: set a max width for the popup */
-      width: 100%; /* Ensure it takes full width of the container */
-      box-sizing: border-box; /* Include padding and border in the element's total width and height */
     }
     .popup button {
       display: block;
@@ -116,35 +113,15 @@
       background-color: #d6a5a5; /* Dark red */
       color: #000;
     }
-    .popup .close-button {
-      background-color: #007bff;
-      color: #fff;
-    }
-    .popup .close-button:hover {
-      background-color: #0056b3;
-    }
-    .popup .done-button {
-      background-color: #28a745;
-      color: #fff;
-    }
-    .popup .done-button:hover {
-      background-color: #218838;
-    }
-    .popup .cancel-button {
-      background-color: #dc3545;
-      color: #fff;
-    }
-    .popup .cancel-button:hover {
-      background-color: #c82333;
-    }
   </style>
 </head>
 <body>
-  <div id="chatContainer" class="chat-container" style="display:none;">
+  <div id="chatContainer" style="display:none;">
     <div id="messages"></div>
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
+      <button class="secret-button" onclick="clearChat()">Clear Chat</button>
     </div>
   </div>
   
@@ -153,9 +130,6 @@
     <button class="Idiots" onclick="setRole('Idiots')">Idiots</button>
     <button class="default" onclick="setRole('default')">Default</button>
     <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
-    <button class="done-button" onclick="closeBeastMode()">Done</button>
-    <button class="cancel-button" onclick="closeBeastMode()">Cancel</button>
-    <button class="close-button" onclick="closeBeastMode()">Back</button>
   </div>
 
   <script>
@@ -254,28 +228,29 @@
           });
         }
 
-        function promptForPassword(callback) {
-          var password = prompt("Enter your password:");
-          callback(password);
-        }
-
         function authenticateUser(userName, password, callback) {
           var query = usersRef.orderByChild('nameLower').equalTo(userName);
           query.once('value', function(snapshot) {
-            if (snapshot.exists()) {
-              snapshot.forEach(function(childSnapshot) {
-                var userData = childSnapshot.val();
-                if (userData.password === password) {
-                  document.cookie = "userUUID=" + childSnapshot.key + ";path=/";
-                  callback(true);
-                } else {
-                  callback(false);
-                }
-              });
-            } else {
-              callback(false);
-            }
+            var exists = false;
+            snapshot.forEach(function(childSnapshot) {
+              var userData = childSnapshot.val();
+              if (userData.password === password) {
+                document.cookie = "userUUID=" + childSnapshot.key + ";path=/";
+                exists = true;
+              }
+            });
+            callback(exists);
           });
+        }
+
+        function promptForPassword(callback) {
+          var password = prompt("Enter your password:");
+          if (password) {
+            callback(password);
+          } else {
+            alert("Password required.");
+            promptForPassword(callback); // Retry password prompt
+          }
         }
 
         function generateUUID() {
@@ -301,45 +276,18 @@
 
         function displayMessages() {
           var messagesDiv = document.getElementById('messages');
-          var lastVisibleMessageKey = null;
-          var isInitialLoad = true;
-
-          function loadMessages() {
-            var query = messagesRef.orderByChild('timestamp').limitToLast(20);
-            if (lastVisibleMessageKey) {
-              query = query.endAt(lastVisibleMessageKey);
-            }
-            query.once('value', function(snapshot) {
-              if (snapshot.numChildren() === 0) return;
-              if (isInitialLoad) {
-                isInitialLoad = false;
-                messagesDiv.innerHTML = ''; // Clear initial load
-              }
-              snapshot.forEach(function(childSnapshot) {
-                var messageData = childSnapshot.val();
-                usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
-                  var userData = userSnapshot.val();
-                  var userName = userData ? userData.name : 'Unknown';
-                  var userRole = userData ? userData.role : 'default';
-                  var messageElement = document.createElement('div');
-                  messageElement.textContent = userName + ": " + messageData.message;
-                  messageElement.className = 'message ' + userRole + (messageData.uuid === getUserUUID() ? ' self' : '');
-                  messagesDiv.appendChild(messageElement);
-                  lastVisibleMessageKey = childSnapshot.key; // Track last message key
-                });
-              });
-              messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
+          messagesDiv.innerHTML = '';
+          messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
+            var messageData = snapshot.val();
+            usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
+              var userData = userSnapshot.val();
+              var userName = userData ? userData.name : 'Unknown';
+              var userRole = userData ? userData.role : 'default';
+              var messageElement = document.createElement('div');
+              messageElement.textContent = userName + ": " + messageData.message;
+              messageElement.className = 'message ' + userRole + (userData.uuid === getUserUUID() ? ' self' : '');
+              messagesDiv.appendChild(messageElement);
             });
-          }
-
-          // Load initial messages
-          loadMessages();
-
-          // Load more messages when scrolling up
-          messagesDiv.addEventListener('scroll', function() {
-            if (messagesDiv.scrollTop === 0) {
-              loadMessages();
-            }
           });
         }
 
@@ -387,11 +335,6 @@
           popup.style.display = 'block';
         }
 
-        function closeBeastMode() {
-          var popup = document.getElementById('beastmodePopup');
-          popup.style.display = 'none';
-        }
-
         // Initialize chat
         promptForLoginOrSignup();
 
@@ -407,7 +350,6 @@
         window.accessSecretChat = accessSecretChat;
         window.clearChat = clearChat;
         window.showBeastmode = showBeastmode;
-        window.closeBeastMode = closeBeastMode;
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
