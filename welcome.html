@@ -44,10 +44,10 @@
             align-items: center;
         }
 
-        #embed-content {
+        #embed iframe {
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            border: none;
         }
 
         #content {
@@ -129,17 +129,114 @@
     <div id="day-week-display"></div>
     <div id="welcome-message">Welcome Harry</div>
     <div id="embed">
-        <div id="embed-content">
-            <!-- Embed content goes here -->
-            <div style="display: none;" id="day-week-display"></div>
-            <div id="timetable"></div>
-        </div>
+        <!-- Embed content from the provided HTML -->
+        <div style="display: none;" id="day-week-display"></div>
+        <div id="timetable"></div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+        <script>
+            // Function to determine the current week
+            function getWeek(date) {
+                const weekNumber = (date.getWeekNumber() % 2 === 0) ? "A" : "B";
+                return `Week ${weekNumber}`;
+            }
+
+            // Function to get the week number
+            Date.prototype.getWeekNumber = function () {
+                const firstJan = new Date(this.getFullYear(), 0, 1);
+                return Math.ceil((((this - firstJan) / 86400000) + firstJan.getDay() + 1) / 7);
+            };
+
+            // Function to get the timetable for the current day
+            function getTimetable() {
+                const today = new Date();
+
+                // Check if it's past 3 PM or the weekend, and adjust the date accordingly
+                if (today.getHours() >= 15 || today.getDay() === 0 || today.getDay() === 6) {
+                    today.setDate(today.getDate() + 1);
+                }
+
+                const week = getWeek(today);
+                const dayOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][today.getDay()];
+
+                // Display the current day and week
+                const dayWeekDisplay = document.getElementById('day-week-display');
+                dayWeekDisplay.textContent = `${dayOfWeek}, ${week}`;
+
+                fetch('harry.yaml')
+                    .then(response => response.text())
+                    .then(data => {
+                        const timetable = jsyaml.load(data);
+                        const dayTimetable = timetable[week][dayOfWeek];
+
+                        const timetableContainer = document.getElementById('timetable');
+                        timetableContainer.innerHTML = '';
+
+                        for (const period in dayTimetable) {
+                            const { Class, Room, Time } = dayTimetable[period];
+
+                            if (period === 'Lunch' || period === 'Recess') {
+                                const item = document.createElement('div');
+                                item.classList.add('timetable-item');
+
+                                const timeDiv = document.createElement('div');
+                                timeDiv.classList.add('time');
+                                timeDiv.textContent = Time;
+
+                                const activityDiv = document.createElement('div');
+                                activityDiv.classList.add('break'); // Use .break class for Lunch/Recess
+                                activityDiv.innerHTML = `<span class="break-text">${period}</span>`; // Use the period name (Lunch/Recess) as the activity
+
+                                const roomDiv = document.createElement('div');
+                                roomDiv.classList.add('room');
+                                roomDiv.textContent = ''; // No need to display room for Lunch/Recess
+
+                                item.appendChild(timeDiv);
+                                item.appendChild(activityDiv);
+                                item.appendChild(roomDiv);
+
+                                timetableContainer.appendChild(item);
+                            } else {
+                                const item = document.createElement('div');
+                                item.classList.add('timetable-item');
+
+                                const timeDiv = document.createElement('div');
+                                timeDiv.classList.add('time');
+                                timeDiv.textContent = Time;
+
+                                const activityDiv = document.createElement('div');
+                                activityDiv.classList.add('activity');
+                                activityDiv.textContent = Class;
+
+                                const roomDiv = document.createElement('div');
+                                roomDiv.classList.add('room');
+                                roomDiv.textContent = Room;
+
+                                item.appendChild(timeDiv);
+                                item.appendChild(activityDiv);
+                                item.appendChild(roomDiv);
+
+                                timetableContainer.appendChild(item);
+                            }
+                        }
+                    })
+                    .catch(error => console.log('Error fetching timetable:', error));
+            }
+            function isMobileDevice() {
+                return /Mobi|Android/i.test(navigator.userAgent);
+            }
+
+            // Redirect mobile users to a different page
+            if (isMobileDevice()) {
+                window.location.href = 'harry-m.html'; // Replace with your mobile page
+            } else {
+                getTimetable();
+            }
+        </script>
     </div>
     <div id="content">
         <!-- Your additional content goes here -->
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
         // Check for the "itsame" cookie and redirect if not present
         function checkCookie() {
@@ -151,94 +248,6 @@
             }
         }
 
-        // Function to determine the current week
-        function getWeek(date) {
-            const weekNumber = (date.getWeekNumber() % 2 === 0) ? "A" : "B";
-            return `Week ${weekNumber}`;
-        }
-
-        // Function to get the week number
-        Date.prototype.getWeekNumber = function () {
-            const firstJan = new Date(this.getFullYear(), 0, 1);
-            return Math.ceil((((this - firstJan) / 86400000) + firstJan.getDay() + 1) / 7);
-        };
-
-        // Function to get the timetable for the current day
-        function getTimetable() {
-            const today = new Date();
-
-            // Check if it's past 3 PM or the weekend, and adjust the date accordingly
-            if (today.getHours() >= 15 || today.getDay() === 0 || today.getDay() === 6) {
-                today.setDate(today.getDate() + 1);
-            }
-
-            const week = getWeek(today);
-            const dayOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][today.getDay()];
-
-            // Display the current day and week
-            const dayWeekDisplay = document.getElementById('day-week-display');
-            dayWeekDisplay.textContent = `${dayOfWeek}, ${week}`;
-
-            fetch('harry.yaml')
-                .then(response => response.text())
-                .then(data => {
-                    const timetable = jsyaml.load(data);
-                    const dayTimetable = timetable[week][dayOfWeek];
-
-                    const timetableContainer = document.getElementById('timetable');
-                    timetableContainer.innerHTML = '';
-
-                    for (const period in dayTimetable) {
-                        const { Class, Room, Time } = dayTimetable[period];
-
-                        if (period === 'Lunch' || period === 'Recess') {
-                            const item = document.createElement('div');
-                            item.classList.add('timetable-item');
-
-                            const timeDiv = document.createElement('div');
-                            timeDiv.classList.add('time');
-                            timeDiv.textContent = Time;
-
-                            const activityDiv = document.createElement('div');
-                            activityDiv.classList.add('break'); // Use .break class for Lunch/Recess
-                            activityDiv.innerHTML = `<span class="break-text">${period}</span>`; // Use the period name (Lunch/Recess) as the activity
-
-                            const roomDiv = document.createElement('div');
-                            roomDiv.classList.add('room');
-                            roomDiv.textContent = ''; // No need to display room for Lunch/Recess
-
-                            item.appendChild(timeDiv);
-                            item.appendChild(activityDiv);
-                            item.appendChild(roomDiv);
-
-                            timetableContainer.appendChild(item);
-                        } else {
-                            const item = document.createElement('div');
-                            item.classList.add('timetable-item');
-
-                            const timeDiv = document.createElement('div');
-                            timeDiv.classList.add('time');
-                            timeDiv.textContent = Time;
-
-                            const activityDiv = document.createElement('div');
-                            activityDiv.classList.add('activity');
-                            activityDiv.textContent = Class;
-
-                            const roomDiv = document.createElement('div');
-                            roomDiv.classList.add('room');
-                            roomDiv.textContent = Room;
-
-                            item.appendChild(timeDiv);
-                            item.appendChild(activityDiv);
-                            item.appendChild(roomDiv);
-
-                            timetableContainer.appendChild(item);
-                        }
-                    }
-                })
-                .catch(error => console.log('Error fetching timetable:', error));
-        }
-
         // Function to remove the "itsame" cookie
         function removeCookie() {
             document.cookie = 'itsame=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
@@ -247,7 +256,8 @@
 
         // Function to refresh the embedded content
         function refreshEmbeds() {
-            getTimetable(); // Refresh the timetable
+            const iframe = document.getElementById('embed-frame');
+            iframe.src = iframe.src; // Refresh the iframe by resetting its src
         }
 
         // Listen for keydown event
@@ -260,7 +270,7 @@
 
         // Initialize display and check cookie
         checkCookie();
-        getTimetable();
+        displayDayWeek();
 
         // Make refreshEmbeds() and removeCookie() available globally
         window.refreshEmbeds = refreshEmbeds;
