@@ -142,7 +142,7 @@
             } else {
               var userUUID = generateUUID();
               document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
+              usersRef.child(userUUID).set({ name: userName, role: "default", nameLower: userName.toLowerCase() }, function(error) {
                 if (error) {
                   alert("Error setting user name.");
                 } else {
@@ -233,7 +233,7 @@
       function updateUserName(newName) {
         var userUUID = getUserUUID();
         if (userUUID && newName) {
-          usersRef.child(userUUID).update({ name: newName }, function(error) {
+          usersRef.child(userUUID).update({ name: newName, nameLower: newName.toLowerCase() }, function(error) {
             if (error) {
               alert("Error updating user name.");
             } else {
@@ -256,4 +256,57 @@
             displayMessages(); // Refresh the chat display
           })
           .catch(function(error) {
-            alert("Error clearing chat: "
+            alert("Error clearing chat: " + error.message);
+          });
+      }
+
+      function showBeastMode() {
+        var panel = document.getElementById('beastmodePanel');
+        panel.style.display = 'block';
+      }
+
+      function closeBeastMode() {
+        var panel = document.getElementById('beastmodePanel');
+        panel.style.display = 'none';
+      }
+
+      function setUpEventListeners() {
+        document.getElementById('sendButton').addEventListener('click', sendMessage);
+        document.getElementById('secretButton').addEventListener('click', accessSecretChat);
+        document.getElementById('beastModeButton').addEventListener('click', showBeastMode);
+        document.getElementById('beastmodePanel').addEventListener('click', function(event) {
+          if (event.target.classList.contains('close-button')) {
+            closeBeastMode();
+          } else if (event.target.classList.contains('set-role')) {
+            setRole(event.target.dataset.role);
+          } else if (event.target.id === 'clearChatButton') {
+            clearChat();
+          }
+        });
+      }
+
+      setUpEventListeners();
+      promptForUserName(); // Prompt for username on page load
+    });
+  </script>
+
+  <div id="chatContainer" style="display:none;">
+    <div id="messages" class="chat-container"></div>
+    <div class="input-container">
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <button id="sendButton">Send</button>
+      <button id="secretButton" class="secret-button">Secret</button>
+    </div>
+  </div>
+
+  <div id="beastmodePanel" class="beastmode-panel">
+    <button class="close-button">Close</button>
+    <button class="set-role" data-role="ChickenMan">ChickenMan</button>
+    <button class="set-role" data-role="Idiots">Idiots</button>
+    <button class="set-role" data-role="Default">Default</button>
+    <button id="clearChatButton">Clear Chat</button>
+  </div>
+
+  <link rel="icon" id="favicon" href="favicon.ico">
+</body>
+</html>
