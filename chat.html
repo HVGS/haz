@@ -78,6 +78,14 @@
   </style>
 </head>
 <body>
+  <div id="chatContainer" style="display:none;">
+    <div id="messages"></div>
+    <div class="input-container">
+      <input type="text" id="messageInput" placeholder="Type a message" />
+      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
+    </div>
+  </div>
+  
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       try {
@@ -266,31 +274,10 @@
           }
         }
 
-        function updateUserName(newName) {
-          var userUUID = getUserUUID();
-          if (userUUID && newName) {
-            usersRef.child(userUUID).update({ name: newName }, function(error) {
-              if (error) {
-                alert("Error updating user name.");
-              } else {
-                alert("User name updated to: " + newName);
-              }
-            });
-          } else {
-            alert("Error updating user name.");
-          }
-        }
-
-        document.getElementById('chatContainer').innerHTML = `
-          <div id="messages"></div>
-          <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Type a message" />
-            <button class="secret-button" onclick="accessSecretChat()">Secret</button>
-          </div>
-        `;
-
+        // Initialize chat
         promptForLoginOrSignup();
 
+        // Add event listener for Enter key to send messages
         document.addEventListener('keydown', function(event) {
           if (event.key === 'Enter') {
             event.preventDefault();
@@ -298,6 +285,8 @@
           }
         });
 
+        // Expose functions to global scope
+        window.accessSecretChat = accessSecretChat;
         window.console.rename = function(name) {
           if (typeof name === 'string' && name.trim()) {
             updateUserName(name);
@@ -305,8 +294,8 @@
             alert("Invalid name.");
           }
         };
-
         window.console.setRole = setRole;
+
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
