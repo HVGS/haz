@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>Chat Forum</title>
-  <!-- Import Firebase libraries from CDN -->
+  <link id="favicon" rel="icon" href="favicon.ico" type="image/x-icon">
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <style>
@@ -25,13 +25,12 @@
       overflow: auto;
       margin: 20px;
       position: relative;
-      height: calc(100% - 80px); /* Adjust to fit input and button */
     }
     .message {
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
-      text-align: left; /* Ensures text alignment is left */
+      text-align: left;
     }
     .message.default {
       background-color: #e0e0e0;
@@ -68,81 +67,42 @@
     .input-container .secret-button {
       background-color: #f8d7da;
       color: #721c24;
-      margin-left: 10px; /* Ensure spacing between input field and button */
+      margin-left: 10px;
     }
     .input-container .secret-button:hover {
       background-color: #f5c6cb;
     }
-    .beastmode-panel {
+    #beastModePanel {
       display: none;
       position: fixed;
-      top: 10%;
-      left: 10%;
+      top: 20px;
+      right: 20px;
       background: white;
       border: 1px solid #ddd;
-      border-radius: 5px;
       padding: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
     }
-    .beastmode-panel button {
+    #beastModePanel button {
       display: block;
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
       margin: 5px 0;
+    }
+    #beastModePanel .close-button {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 5px 10px;
       cursor: pointer;
     }
-    .beastmode-panel button.close-button {
-      background-color: #ccc;
-    }
-    .beastmode-panel button.close-button:hover {
-      background-color: #aaa;
-    }
-    .beastmode-panel button.default {
-      background-color: #e0e0e0;
-    }
-    .beastmode-panel button.default:hover {
-      background-color: #c0c0c0;
-    }
-    .beastmode-panel button.idiots {
-      background-color: #e2a8e2;
-    }
-    .beastmode-panel button.idiots:hover {
-      background-color: #d18ad1;
-    }
-    .beastmode-panel button.chickenman {
-      background-color: #f8d7da;
-    }
-    .beastmode-panel button.chickenman:hover {
-      background-color: #f5c6cb;
-    }
-    .beastmode-panel button.clear-chat {
-      background-color: #f8d7da;
-    }
-    .beastmode-panel button.clear-chat:hover {
-      background-color: #f5c6cb;
-    }
-    .favicon-indicator {
-      width: 16px;
-      height: 16px;
-      background: transparent;
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      border-radius: 50%;
-      border: 2px solid red;
-      display: none;
+    #beastModePanel .close-button:hover {
+      background-color: #c82333;
     }
   </style>
-  <link rel="icon" href="favicon.ico" id="favicon">
 </head>
 <body>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      console.log("DOM fully loaded and parsed");
-      
-      // Firebase configuration
       var firebaseConfig = {
         apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
         authDomain: "chat-71251.firebaseapp.com",
@@ -151,12 +111,10 @@
         storageBucket: "chat-71251.appspot.com",
         messagingSenderId: "290327153997"
       };
-
-      // Initialize Firebase
       firebase.initializeApp(firebaseConfig);
       var database = firebase.database();
       var messagesRef = database.ref('messages');
-      var usersRef = database.ref('users'); // To manage user roles and names
+      var usersRef = database.ref('users');
 
       function getUserUUID() {
         var uuid = "";
@@ -174,18 +132,14 @@
       function promptForUserName() {
         var userName = prompt("Enter your name:");
         if (userName) {
-          checkUserName(userName, function(exists) {
+          checkUserName(userName.toLowerCase(), function(exists) {
             if (exists) {
               alert("Name taken, please choose another.");
-              promptForUserName(); // Prompt again if name is taken
+              promptForUserName();
             } else {
               var userUUID = generateUUID();
               document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({
-                name: userName,
-                role: "default",
-                nameLower: userName.toLowerCase() // Store name in lower case for comparison
-              }, function(error) {
+              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
                 if (error) {
                   alert("Error setting user name.");
                 } else {
@@ -199,13 +153,12 @@
       }
 
       function checkUserName(userName, callback) {
-        usersRef.orderByChild('nameLower').equalTo(userName.toLowerCase()).once('value', function(snapshot) {
+        usersRef.orderByChild('nameLower').equalTo(userName).once('value', function(snapshot) {
           callback(snapshot.exists());
         });
       }
 
       function generateUUID() {
-        // Simple UUID generator function
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
           var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
@@ -239,9 +192,23 @@
             messageElement.textContent = userName + ": " + messageData.message;
             messageElement.className = 'message ' + userRole;
             messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
           });
         });
+      }
+
+      function accessSecretChat() {
+        if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
+          window.location.href = 'chickenchat.html';
+        } else {
+          var passcode = prompt("Enter passcode:");
+          if (passcode && passcode.trim().toUpperCase() === 'PUTTHECHICKENONTHEPIZZA') {
+            document.cookie = "cpizza=true;path=/";
+            window.location.href = 'chickenchat.html';
+          } else {
+            alert("Invalid passcode.");
+          }
+        }
       }
 
       function setRole(role) {
@@ -249,7 +216,7 @@
         if (userUUID) {
           usersRef.child(userUUID).update({ role: role }, function(error) {
             if (error) {
-              alert("Error setting role.");
+              alert("Error updating role.");
             } else {
               alert("Role updated to: " + role);
             }
@@ -262,7 +229,7 @@
       function updateUserName(newName) {
         var userUUID = getUserUUID();
         if (userUUID && newName) {
-          usersRef.child(userUUID).update({ name: newName, nameLower: newName.toLowerCase() }, function(error) {
+          usersRef.child(userUUID).update({ name: newName }, function(error) {
             if (error) {
               alert("Error updating user name.");
             } else {
@@ -274,100 +241,105 @@
         }
       }
 
+      function showBeastMode() {
+        var beastModePanel = document.getElementById('beastModePanel');
+        beastModePanel.style.display = 'block';
+      }
+
+      function hideBeastMode() {
+        var beastModePanel = document.getElementById('beastModePanel');
+        beastModePanel.style.display = 'none';
+      }
+
       function clearChat() {
-        messagesRef.remove()
-          .then(function() {
-            messagesRef.push().set({
-              message: "CHAT CLEARED",
-              uuid: "2F3ba4223a-e921-474f-b8ec-1b34d081ba9f",
-              timestamp: Date.now()
-            });
-            displayMessages(); // Refresh the chat display
-          })
-          .catch(function(error) {
-            alert("Error clearing chat: " + error.message);
+        messagesRef.remove().then(function() {
+          messagesRef.push().set({
+            message: 'CHAT CLEARED',
+            uuid: '2F3ba4223a-e921-474f-b8ec-1b34d081ba9f',
+            timestamp: Date.now()
           });
+        });
+      }
+
+      // Prompt for user name on page load if not set
+      if (getUserUUID()) {
+        document.getElementById('chatContainer').style.display = 'flex';
+        displayMessages();
+      } else {
+        promptForUserName();
+      }
+
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+
+      window.console.rename = function(name) {
+        if (typeof name === 'string' && name.trim()) {
+          updateUserName(name);
+        } else {
+          alert("Invalid name.");
+        }
+      };
+
+      window.console.setRole = setRole;
+      window.console.showBeastMode = showBeastMode;
+      window.console.clearChat = clearChat;
+
+      // Check for unread messages (example logic)
+      function checkForUnreadMessages() {
+        var hasUnreadMessages = false; // Replace with actual unread message logic
+        updateFavicon(hasUnreadMessages);
+      }
+
+      function createFaviconWithDot() {
+        var canvas = document.createElement('canvas');
+        var size = 32;
+        canvas.width = size;
+        canvas.height = size;
+        var ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, size, size); // Transparent background
+
+        ctx.beginPath();
+        ctx.arc(size - 8, 8, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+
+        return canvas.toDataURL('image/x-icon');
       }
 
       function updateFavicon(hasUnreadMessages) {
         var favicon = document.getElementById('favicon');
         if (hasUnreadMessages) {
-          favicon.href = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="red"/></svg>';
+          favicon.href = createFaviconWithDot();
         } else {
-          favicon.href = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="transparent"/></svg>';
+          favicon.href = 'favicon.ico';
         }
       }
 
-      function markMessagesAsRead() {
-        updateFavicon(false);
-      }
+      setInterval(checkForUnreadMessages, 10000);
 
-      function openBeastModePanel() {
-        var panel = document.getElementById('beastmodePanel');
-        panel.style.display = 'block';
-      }
-
-      function accessSecretChat() {
-        var cpizza = document.cookie.split('; ').find(row => row.startsWith('cpizza='));
-        if (cpizza) {
-          window.location.href = 'chickenchat.html';
-        } else {
-          var passcode = prompt("Enter passcode:");
-          if (passcode === 'PUTTHECHICKENONTHEPIZZA') {
-            document.cookie = 'cpizza=true; path=/';
-            window.location.href = 'chickenchat.html';
-          } else {
-            alert("Incorrect passcode.");
-          }
-        }
-      }
-
-      document.getElementById('messageInput').addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-          sendMessage();
-        }
-      });
-
-      document.getElementById('secretButton').addEventListener('click', accessSecretChat);
-
-      document.getElementById('closeBeastMode').addEventListener('click', function() {
-        document.getElementById('beastmodePanel').style.display = 'none';
-      });
-
-      document.getElementById('defaultRoleButton').addEventListener('click', function() {
-        setRole('default');
-      });
-
-      document.getElementById('idiotsRoleButton').addEventListener('click', function() {
-        setRole('Idiots');
-      });
-
-      document.getElementById('chickenmanRoleButton').addEventListener('click', function() {
-        setRole('ChickenMan');
-      });
-
-      document.getElementById('clearChatButton').addEventListener('click', clearChat);
-
-      markMessagesAsRead(); // Mark messages as read on page load
     });
   </script>
-
-  <!-- Main chat container -->
-  <div id="chatContainer" class="chat-container" style="display: none;">
+</head>
+<body>
+  <div class="chat-container" id="chatContainer" style="display:none;">
     <div id="messages"></div>
     <div class="input-container">
-      <input type="text" id="messageInput" placeholder="Type your message here..."/>
-      <button class="secret-button" id="secretButton">Secret</button>
+      <input type="text" id="messageInput" placeholder="Type a message" />
+      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
     </div>
   </div>
 
-  <!-- Beast Mode panel -->
-  <div id="beastmodePanel" class="beastmode-panel">
-    <button class="close-button" id="closeBeastMode">Close</button>
-    <button class="default" id="defaultRoleButton">Set Role to Default</button>
-    <button class="idiots" id="idiotsRoleButton">Set Role to Idiots</button>
-    <button class="chickenman" id="chickenmanRoleButton">Set Role to ChickenMan</button>
-    <button class="clear-chat" id="clearChatButton">Clear Chat</button>
+  <div id="beastModePanel">
+    <button class="close-button" onclick="hideBeastMode()">Close</button>
+    <button onclick="setRole('ChickenMan')">ChickenMan</button>
+    <button onclick="setRole('Idiots')">Idiots</button>
+    <button onclick="setRole('default')">Default</button>
+    <button onclick="clearChat()">Clear Chat</button>
   </div>
 </body>
 </html>
