@@ -1,17 +1,35 @@
-   .message {
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat Forum</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 20px;
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow: auto;
+      margin: 20px;
+      position: relative;
+    }
+    .message {
       display: block;
       margin: 10px 0;
       text-align: left; /* Ensure messages are aligned to the left */
     }
     .message.admin {
       color: darkred; /* Admin message color */
-    }
-    #chatLockedMessage {
-      display: none;
-      color: darkred;
-      font-weight: bold;
-      text-align: center;
-      padding: 20px;
     }
     .input-container {
       display: flex;
@@ -50,42 +68,20 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: white;
-      border: 1px solid #ddd;
+      background: #fff;
       padding: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
       z-index: 1000;
     }
     .popup button {
       display: block;
       margin: 10px 0;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .popup .clear-chat {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    .popup .lock {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    .popup .unlock {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .popup .done-button {
-      background-color: #007bff;
-      color: #fff;
     }
   </style>
 </head>
 <body>
   <div id="chatContainer" class="chat-container" style="display:none;">
     <div id="messages"></div>
-    <div id="chatLockedMessage">Chat is locked</div>
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
@@ -117,6 +113,7 @@
         var usersRef = database.ref('users');
         var clearChatRef = database.ref('clearChatFlag');
         var lockChatRef = database.ref('lockChatFlag');
+        var adminUUID = "3ba4223a-e921-474f-b8ec-1b34d081ba9f"; // Admin UUID for chat lock/unlock
 
         function getUserUUID() {
           var uuid = "";
@@ -251,61 +248,77 @@
 
           messagesRef.on('child_added', function(snapshot) {
             var messageData = snapshot.val();
-            usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
-              var userData = userSnapshot.val();
-              var userName = userData ? userData.name : 'Unknown';
-              var userRole = userData ? userData.role : 'default';
-              var messageElement = document.createElement('div');
-              messageElement.textContent = userName + ": " + messageData.message;
-              messageElement.className = 'message ' + userRole;
-              messagesDiv.appendChild(messageElement);
-              messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            });
-          });
-
-          clearChatRef.on('value', function(snapshot) {
-            if (snapshot.val()) {
-              messagesRef.remove();
-              messagesRef.push().set({
-                message: "CHAT CLEARED",
-                uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
-                timestamp: Date.now()
+            if (messageData.uuid === adminUUID && (messageData.message === "Chat locked" || messageData.message === "Chat unlocked")) {
+              lastLockStatus = messageData.message;
+            } else {
+              usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
+                var userData = userSnapshot.val();
+                var userName = userData ? userData.name : 'Unknown';
+                var userRole = userData ? userData.role : 'default';
+                var messageElement = document.createElement('div');
+                messageElement.textContent = userName + ": " + messageData.message;
+                messageElement.className = 'message ' + userRole;
+                messageList.push(messageElement);
               });
-              document.location.reload(true);
             }
-          });
 
-          lockChatRef.on('value', function(snapshot) {
-            var isLocked = snapshot.val();
-            if (isLocked && lastLockStatus !== isLocked) {
-              document.getElementById('chatLockedMessage').style.display = 'block';
-              document.getElementById('messageInput').style.display = 'none';
-              lastLockStatus = isLocked;
-            } else if (!isLocked && lastLockStatus !== isLocked) {
-              document.getElementById('chatLockedMessage').style.display = 'none';
-              document.getElementById('messageInput').style.display = 'block';
-              lastLockStatus = isLocked;
+            if (lastLockStatus) {
+              var statusElement = document.createElement('div');
+              statusElement.textContent = lastLockStatus;
+              statusElement.className = 'message admin';
+              messageList.push(statusElement);
+              lastLockStatus = null;
             }
+
+            messagesDiv.innerHTML = '';
+            messageList.forEach(function(element) {
+              messagesDiv.appendChild(element);
+            });
+
+            // Auto-scroll to the bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
           });
         }
 
-        function accessSecretChat() {
-          if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
-            window.location.href = 'chickenchat.html';
+        function lockChat() {
+          var userUUID = getUserUUID();
+          if (userUUID) {
+            lockChatRef.set(true);
+            messagesRef.push().set({
+              message: "Chat locked",
+              uuid: adminUUID,
+              timestamp: Date.now()
+            });
           } else {
-            var passcode = prompt("Enter passcode:");
-            if (passcode && passcode.trim().toUpperCase() === 'PUTTHECHICKENONTHEPIZZA') {
-              document.cookie = "cpizza=true;path=/";
-              window.location.href = 'chickenchat.html';
-            } else {
-              alert("Incorrect passcode.");
-            }
+            alert("User not found.");
+          }
+        }
+
+        function unlockChat() {
+          var userUUID = getUserUUID();
+          if (userUUID) {
+            lockChatRef.set(false);
+            messagesRef.push().set({
+              message: "Chat unlocked",
+              uuid: adminUUID,
+              timestamp: Date.now()
+            });
+          } else {
+            alert("User not found.");
           }
         }
 
         function clearChat() {
-          messagesRef.remove(); // Clear all messages
-          clearChatRef.set(true); // Trigger a page refresh for all users
+          messagesRef.remove();
+          messagesRef.push().set({
+            message: "CHAT CLEARED",
+            uuid: adminUUID,
+            timestamp: Date.now()
+          });
+          clearChatRef.set(true);
+          setTimeout(function() {
+            location.reload();
+          }, 1000); // Delay to ensure the message is pushed before reload
         }
 
         function showBeastmode() {
@@ -318,23 +331,13 @@
           popup.style.display = 'none';
         }
 
-        function lockChat() {
-          lockChatRef.set(true);
-          messagesRef.push().set({
-            message: "CHAT LOCKED",
-            uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
-            timestamp: Date.now()
-          });
-        }
-
-        function unlockChat() {
-          lockChatRef.set(false);
-          messagesRef.push().set({
-            message: "CHAT UNLOCKED",
-            uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
-            timestamp: Date.now()
-          });
-        }
+        // Event listeners
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            sendMessage();
+          }
+        });
 
         // Expose functions to global scope
         window.accessSecretChat = accessSecretChat;
@@ -343,8 +346,9 @@
         window.closeBeastMode = closeBeastMode;
         window.lockChat = lockChat;
         window.unlockChat = unlockChat;
-        
-        promptForLoginOrSignup(); // Initial prompt for login or signup
+
+        // Initialize
+        promptForLoginOrSignup();
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
