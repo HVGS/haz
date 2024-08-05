@@ -1,52 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Chat Forum</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
-    }
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      padding: 20px;
-      background-color: #ffffff;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      overflow-y: auto;
-      margin: 20px;
-      position: relative;
-    }
-    .message {
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      text-align: left;
-    }
-    .message.default {
-      background-color: #e0e0e0;
-    }
-    .message.ChickenMan {
-      background-color: #f8d7da;
-    }
-    .message.Idiots {
-      background-color: #e2a8e2;
-    }
-    .message.self {
-      background-color: #cce5ff;
-      color: #000;
+   .message {
+      display: block;
+      margin: 10px 0;
+      text-align: left; /* Ensure messages are aligned to the left */
     }
     .message.admin {
-      background-color: #d6a5a5;
-      color: #000;
+      color: darkred; /* Admin message color */
+    }
+    #chatLockedMessage {
+      display: none;
+      color: darkred;
+      font-weight: bold;
+      text-align: center;
+      padding: 20px;
     }
     .input-container {
       display: flex;
@@ -63,6 +28,7 @@
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
+      margin-right: 10px;
     }
     .input-container button {
       padding: 10px 20px;
@@ -73,7 +39,7 @@
     .input-container .secret-button {
       background-color: #f8d7da;
       color: #721c24;
-      margin-left: 10px;
+      margin-left: 10px; /* Ensure spacing between input field and button */
     }
     .input-container .secret-button:hover {
       background-color: #f5c6cb;
@@ -84,56 +50,42 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background-color: #fff;
+      background: white;
       border: 1px solid #ddd;
-      border-radius: 5px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       z-index: 1000;
-      max-width: 400px;
-      width: 100%;
-      box-sizing: border-box;
     }
     .popup button {
       display: block;
-      margin: 10px auto;
-      padding: 10px 20px;
+      margin: 10px 0;
+      padding: 10px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    .popup button.ChickenMan {
+    .popup .clear-chat {
       background-color: #f8d7da;
+      color: #721c24;
     }
-    .popup button.Idiots {
-      background-color: #e2a8e2;
+    .popup .lock {
+      background-color: #f8d7da;
+      color: #721c24;
     }
-    .popup button.default {
-      background-color: #e0e0e0;
-    }
-    .popup button.clear-chat {
-      background-color: #d6a5a5;
-      color: #000;
+    .popup .unlock {
+      background-color: #d4edda;
+      color: #155724;
     }
     .popup .done-button {
-      background-color: #28a745;
+      background-color: #007bff;
       color: #fff;
-    }
-    .popup .done-button:hover {
-      background-color: #218838;
-    }
-    .message {
-      display: block;
-      margin: 10px 0;
-    }
-    .message.admin {
-      color: darkred; /* Admin message color */
     }
   </style>
 </head>
 <body>
   <div id="chatContainer" class="chat-container" style="display:none;">
     <div id="messages"></div>
+    <div id="chatLockedMessage">Chat is locked</div>
     <div class="input-container">
       <input type="text" id="messageInput" placeholder="Type a message" />
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
@@ -295,6 +247,7 @@
         function displayMessages() {
           var messagesDiv = document.getElementById('messages');
           var messageList = [];
+          var lastLockStatus = null;
 
           messagesRef.on('child_added', function(snapshot) {
             var messageData = snapshot.val();
@@ -304,49 +257,36 @@
               var userRole = userData ? userData.role : 'default';
               var messageElement = document.createElement('div');
               messageElement.textContent = userName + ": " + messageData.message;
-              messageElement.className = 'message ' + userRole + (messageData.uuid === getUserUUID() ? ' self' : '');
-              messageList.push(messageElement);
-              loadMessages(messagesDiv, messageList);
+              messageElement.className = 'message ' + userRole;
+              messagesDiv.appendChild(messageElement);
+              messagesDiv.scrollTop = messagesDiv.scrollHeight;
             });
           });
 
-          // Listen for clearChatFlag changes
           clearChatRef.on('value', function(snapshot) {
-            if (snapshot.val() === true) {
-              clearChatRef.set(false); // Reset the flag
-              location.reload(); // Refresh the page for all users
+            if (snapshot.val()) {
+              messagesRef.remove();
+              messagesRef.push().set({
+                message: "CHAT CLEARED",
+                uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
+                timestamp: Date.now()
+              });
+              document.location.reload(true);
             }
           });
 
-          // Listen for lockChatFlag changes
           lockChatRef.on('value', function(snapshot) {
             var isLocked = snapshot.val();
-            if (isLocked) {
-              var adminMessage = {
-                message: "Chat locked",
-                uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
-                timestamp: Date.now()
-              };
-              messagesRef.push().set(adminMessage);
-              document.getElementById('messageInput').disabled = true;
-            } else {
-              var adminMessage = {
-                message: "Chat unlocked",
-                uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
-                timestamp: Date.now()
-              };
-              messagesRef.push().set(adminMessage);
-              document.getElementById('messageInput').disabled = false;
+            if (isLocked && lastLockStatus !== isLocked) {
+              document.getElementById('chatLockedMessage').style.display = 'block';
+              document.getElementById('messageInput').style.display = 'none';
+              lastLockStatus = isLocked;
+            } else if (!isLocked && lastLockStatus !== isLocked) {
+              document.getElementById('chatLockedMessage').style.display = 'none';
+              document.getElementById('messageInput').style.display = 'block';
+              lastLockStatus = isLocked;
             }
           });
-        }
-
-        function loadMessages(container, messagesList) {
-          container.innerHTML = '';
-          messagesList.forEach(function(messageElement) {
-            container.appendChild(messageElement);
-          });
-          container.scrollTop = container.scrollHeight; // Scroll to bottom
         }
 
         function accessSecretChat() {
@@ -358,44 +298,14 @@
               document.cookie = "cpizza=true;path=/";
               window.location.href = 'chickenchat.html';
             } else {
-              alert("Invalid passcode.");
+              alert("Incorrect passcode.");
             }
           }
         }
 
         function clearChat() {
-          messagesRef.remove().then(function() {
-            messagesRef.push().set({
-              message: "Chat cleared",
-              uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f", // Admin UUID
-              timestamp: Date.now()
-            }).then(function() {
-              clearChatRef.set(true); // Set the flag to notify all users
-            });
-          });
-        }
-
-        function lockChat() {
-          lockChatRef.set(true);
-        }
-
-        function unlockChat() {
-          lockChatRef.set(false);
-        }
-
-        function setRole(role) {
-          var userUUID = getUserUUID();
-          if (userUUID) {
-            usersRef.child(userUUID).update({ role: role }, function(error) {
-              if (error) {
-                alert("Error updating role.");
-              } else {
-                alert("Role updated to: " + role);
-              }
-            });
-          } else {
-            alert("User not found.");
-          }
+          messagesRef.remove(); // Clear all messages
+          clearChatRef.set(true); // Trigger a page refresh for all users
         }
 
         function showBeastmode() {
@@ -408,25 +318,33 @@
           popup.style.display = 'none';
         }
 
-        // Initialize chat
-        promptForLoginOrSignup();
+        function lockChat() {
+          lockChatRef.set(true);
+          messagesRef.push().set({
+            message: "CHAT LOCKED",
+            uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
+            timestamp: Date.now()
+          });
+        }
 
-        // Add event listener for Enter key to send messages
-        document.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            sendMessage();
-          }
-        });
+        function unlockChat() {
+          lockChatRef.set(false);
+          messagesRef.push().set({
+            message: "CHAT UNLOCKED",
+            uuid: "3ba4223a-e921-474f-b8ec-1b34d081ba9f",
+            timestamp: Date.now()
+          });
+        }
 
         // Expose functions to global scope
         window.accessSecretChat = accessSecretChat;
         window.clearChat = clearChat;
         window.showBeastmode = showBeastmode;
         window.closeBeastMode = closeBeastMode;
-        window.setRole = setRole;
         window.lockChat = lockChat;
         window.unlockChat = unlockChat;
+        
+        promptForLoginOrSignup(); // Initial prompt for login or signup
       } catch (error) {
         console.error("Error initializing chat:", error);
         document.body.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
