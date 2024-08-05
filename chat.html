@@ -140,6 +140,8 @@
 <body>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      console.log("DOM fully loaded and parsed");
+      
       // Firebase configuration
       var firebaseConfig = {
         apiKey: "AIzaSyDB2sNW2w-kvwOaqYJ-6Pojd79j1rRzgDw",
@@ -237,23 +239,9 @@
             messageElement.textContent = userName + ": " + messageData.message;
             messageElement.className = 'message ' + userRole;
             messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
           });
         });
-      }
-
-      function accessSecretChat() {
-        if (document.cookie.split(';').some((item) => item.trim().startsWith('cpizza='))) {
-          window.location.href = 'chickenchat.html';
-        } else {
-          var passcode = prompt("Enter passcode:");
-          if (passcode && passcode.trim().toUpperCase() === 'PUTTHECHICKENONTHEPIZZA') {
-            document.cookie = "cpizza=true;path=/";
-            window.location.href = 'chickenchat.html';
-          } else {
-            alert("Invalid passcode.");
-          }
-        }
       }
 
       function setRole(role) {
@@ -261,7 +249,7 @@
         if (userUUID) {
           usersRef.child(userUUID).update({ role: role }, function(error) {
             if (error) {
-              alert("Error updating role.");
+              alert("Error setting role.");
             } else {
               alert("Role updated to: " + role);
             }
