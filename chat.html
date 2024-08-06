@@ -21,6 +21,7 @@
       var database = firebase.database();
       var messagesRef = database.ref('messages');
       var usersRef = database.ref('users');
+      var chatLocked = false;
 
       function getUserUUID() {
         var uuid = "";
@@ -45,7 +46,7 @@
             } else {
               var userUUID = generateUUID();
               document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, role: "default" }, function(error) {
+              usersRef.child(userUUID).set({ name: userName, role: "default", nameLower: userName.toLowerCase() }, function(error) {
                 if (error) {
                   alert("Error setting user name.");
                 } else {
@@ -88,7 +89,7 @@
       function displayMessages() {
         var messagesDiv = document.getElementById('messages');
         messagesDiv.innerHTML = '';
-        messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
+        messagesRef.orderByChild('timestamp').limitToLast(20).on('child_added', function(snapshot) {
           var messageData = snapshot.val();
           usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
             var userData = userSnapshot.val();
@@ -135,7 +136,7 @@
       function updateUserName(newName) {
         var userUUID = getUserUUID();
         if (userUUID && newName) {
-          usersRef.child(userUUID).update({ name: newName }, function(error) {
+          usersRef.child(userUUID).update({ name: newName, nameLower: newName.toLowerCase() }, function(error) {
             if (error) {
               alert("Error updating user name.");
             } else {
@@ -174,6 +175,18 @@
         beastModePanel.style.display = 'none';
       }
 
+      function toggleChatLock() {
+        chatLocked = !chatLocked;
+        var messageInput = document.getElementById('messageInput');
+        if (chatLocked) {
+          messageInput.disabled = true;
+          messageInput.placeholder = "CHAT IS LOCKED";
+        } else {
+          messageInput.disabled = false;
+          messageInput.placeholder = "Type a message";
+        }
+      }
+
       if (getUserUUID()) {
         document.getElementById('chatContainer').style.display = 'flex';
         displayMessages();
@@ -184,7 +197,7 @@
       document.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
           event.preventDefault();
-          sendMessage();
+          if (!chatLocked) sendMessage();
         }
       });
 
@@ -194,6 +207,7 @@
       window.clearChat = clearChat;
       window.showBeastMode = showBeastMode;
       window.hideBeastMode = hideBeastMode;
+      window.toggleChatLock = toggleChatLock;
     });
   </script>
 
@@ -217,7 +231,7 @@
   <div id="chatContainer" style="display: none;">
     <div id="messages"></div>
     <div class="input-container">
-      <input type="text" id="messageInput" placeholder="CHAT IS LOCKED" disabled>
+      <input type="text" id="messageInput" placeholder="Type a message" />
       <button class="secret-button" onclick="accessSecretChat()">Secret</button>
     </div>
   </div>
@@ -226,8 +240,10 @@
   <div id="beastmodePanel" class="beastmode-panel" style="display: none;">
     <button onclick="setRole('admin')">Admin</button>
     <button onclick="setRole('default')">Default</button>
+    <button onclick="toggleChatLock()">Lock Chat</button>
+    <button onclick="toggleChatLock()">Unlock Chat</button>
     <button onclick="clearChat()">Clear Chat</button>
-    <button onclick="hideBeastMode()">Close</button>
+    <button onclick="hideBeastMode()">Done</button>
   </div>
 </body>
 </html>
