@@ -15,9 +15,7 @@ body {
   background-color: #ffffff;
   border: 1px solid #ddd;
   border-radius: 5px;
-  overflow: hidden;
-  margin: 20px;
-  position: relative;
+  overflow: auto
 }
 
 #messages {
