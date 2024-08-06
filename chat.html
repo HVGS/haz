@@ -40,40 +40,21 @@
         return uuid;
       }
 
-      function promptForUserName() {
-        var userName = prompt("Enter your name:");
-        if (userName) {
-          checkUserName(userName.toLowerCase(), function(exists) {
-            if (exists) {
-              alert("Name taken, please choose another.");
-              promptForUserName(); // Prompt again if name is taken
-            } else {
-              var userUUID = generateUUID();
-              document.cookie = "userUUID=" + userUUID + ";path=/";
-              usersRef.child(userUUID).set({ name: userName, nameLower: userName.toLowerCase(), role: "default" }, function(error) {
-                if (error) {
-                  alert("Error setting user name.");
-                } else {
-                  document.getElementById('chatContainer').style.display = 'flex';
-                  displayMessages();
-                }
-              });
-            }
+      function displayMessages() {
+        var messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = '';
+        messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
+          var messageData = snapshot.val();
+          usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
+            var userData = userSnapshot.val();
+            var userName = userData ? userData.name : 'Unknown';
+            var userRole = userData ? userData.role : 'default';
+            var messageElement = document.createElement('div');
+            messageElement.textContent = userName + ": " + messageData.message;
+            messageElement.className = 'message ' + userRole;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
           });
-        }
-      }
-
-      function checkUserName(userNameLower, callback) {
-        usersRef.orderByChild('nameLower').equalTo(userNameLower).once('value', function(snapshot) {
-          callback(snapshot.exists());
-        });
-      }
-
-      function generateUUID() {
-        // Simple UUID generator function
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
         });
       }
 
@@ -92,24 +73,6 @@
           });
           messageInput.value = '';
         }
-      }
-
-      function displayMessages() {
-        var messagesDiv = document.getElementById('messages');
-        messagesDiv.innerHTML = '';
-        messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
-          var messageData = snapshot.val();
-          usersRef.child(messageData.uuid).once('value', function(userSnapshot) {
-            var userData = userSnapshot.val();
-            var userName = userData ? userData.name : 'Unknown';
-            var userRole = userData ? userData.role : 'default';
-            var messageElement = document.createElement('div');
-            messageElement.textContent = userName + ": " + messageData.message;
-            messageElement.className = 'message ' + userRole;
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-          });
-        });
       }
 
       function accessSecretChat() {
@@ -201,21 +164,73 @@
         document.body.appendChild(beastmodePanel);
       }
 
-      // Prompt for user name on page load if not set
-      if (getUserUUID()) {
-        document.getElementById('chatContainer').style.display = 'flex';
-        displayMessages();
-      } else {
-        promptForUserName();
+      function promptForUserName() {
+        var userNamePrompt = document.getElementById('userNamePrompt');
+        userNamePrompt.style.display = 'block';
       }
 
-      // Add event listener for Enter key to send messages
-      document.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-          event.preventDefault(); // Prevent default Enter key behavior (e.g., form submission)
-          sendMessage();
+      function signUp() {
+        var signUpForm = document.getElementById('signUpForm');
+        var userName = signUpForm.querySelector('input[name="userName"]').value;
+        if (userName) {
+          checkUserName(userName.toLowerCase(), function(exists) {
+            if (exists) {
+              alert("Name taken, please choose another.");
+            } else {
+              var userUUID = generateUUID();
+              document.cookie = "userUUID=" + userUUID + ";path=/";
+              usersRef.child(userUUID).set({ name: userName, nameLower: userName.toLowerCase(), role: "default" }, function(error) {
+                if (error) {
+                  alert("Error setting user name.");
+                } else {
+                  document.getElementById('chatContainer').style.display = 'flex';
+                  document.getElementById('userNamePrompt').style.display = 'none';
+                  displayMessages();
+                }
+              });
+            }
+          });
         }
-      });
+      }
+
+      function checkUserName(userNameLower, callback) {
+        usersRef.orderByChild('nameLower').equalTo(userNameLower).once('value', function(snapshot) {
+          callback(snapshot.exists());
+        });
+      }
+
+      function login() {
+        var loginForm = document.getElementById('loginForm');
+        var userName = loginForm.querySelector('input[name="loginName"]').value;
+        var password = loginForm.querySelector('input[name="password"]').value;
+        if (userName && password) {
+          usersRef.orderByChild('nameLower').equalTo(userName.toLowerCase()).once('value', function(snapshot) {
+            var userExists = snapshot.exists();
+            if (userExists) {
+              snapshot.forEach(function(childSnapshot) {
+                var userData = childSnapshot.val();
+                if (password === userData.password) {
+                  document.cookie = "userUUID=" + childSnapshot.key + ";path=/";
+                  document.getElementById('loginForm').style.display = 'none';
+                  document.getElementById('chatContainer').style.display = 'flex';
+                  displayMessages();
+                  return true;
+                }
+              });
+              alert("Incorrect password.");
+            } else {
+              alert("User does not exist.");
+            }
+          });
+        }
+      }
+
+      function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
 
       // Define console commands globally
       (function() {
@@ -233,15 +248,47 @@
 
       // Expose accessSecretChat function to global scope
       window.accessSecretChat = accessSecretChat;
+
+      // Check if user is already logged in
+      if (getUserUUID()) {
+        document.getElementById('chatContainer').style.display = 'flex';
+        displayMessages();
+      } else {
+        promptForUserName();
+      }
     });
   </script>
 
-  <div class="chat-container" id="chatContainer" style="display:none;">
-    <div id="messages"></div>
-    <div class="input-container">
-      <input type="text" id="messageInput" placeholder="Type a message" />
-      <button class="secret-button" onclick="accessSecretChat()">Secret</button>
+  <!-- HTML structure for login and signup -->
+  <div id="userNamePrompt" style="display:none;">
+    <div>
+      <label for="userName">Enter your name:</label>
+      <input type="text" id="userName" name="userName">
+      <button onclick="signUp()">Sign Up</button>
     </div>
   </div>
+
+  <div id="loginForm" style="display:none;">
+    <div>
+      <label for="loginName">Name:</label>
+      <input type="text" id="loginName" name="loginName">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password">
+      <button onclick="login()">Login</button>
+    </div>
+  </div>
+
+  <div id="chatContainer" style="display:none;">
+    <div id="messages"></div>
+    <div class="input-container">
+      <input type="text" id="messageInput" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <button onclick="accessSecretChat()" class="secret-button">Secret</button>
+    <button onclick="showBeastmode()" class="secret-button">Beast Mode</button>
+  </div>
+
+  <!-- Include the external CSS file -->
+  <link rel="stylesheet" type="text/css" href="chat.css">
 </body>
 </html>
